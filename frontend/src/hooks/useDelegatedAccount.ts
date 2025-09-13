@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import delegatedAccountABI from '../contracts/Delegated7702Account.abi.json';
 
 // Get configuration from environment variables
@@ -31,18 +31,31 @@ interface AccountConfig {
 
 export const useDelegatedAccount = () => {
   const { user, sendTransaction } = usePrivy();
+  const { wallets } = useWallets();
   const [isInitializing, setIsInitializing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const checkInitialized = useCallback(async () => {
-    if (!user?.wallet?.address) return false;
+    if (!wallets.length) return false;
 
     try {
+      // Find ONLY embedded wallet - strictly filter for Privy embedded wallets (following useWalletBalance pattern)
+      const embeddedWallet = wallets.find(wallet => 
+        wallet.connectorType === 'embedded' && 
+        wallet.walletClientType === 'privy'
+      ) || null;
+      
+      if (!embeddedWallet?.address) {
+        console.error('No embedded wallet found');
+        return false;
+      }
+
       const provider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
       
+      // Check initialization status on the embedded wallet address (where the delegated code lives)
       const contract = new ethers.Contract(
-        CONTRACT_ADDRESSES.DELEGATED_ACCOUNT,
+        embeddedWallet.address, // ← Embedded wallet address, not the implementation contract
         delegatedAccountABI,
         provider
       );
@@ -54,10 +67,10 @@ export const useDelegatedAccount = () => {
       console.error('Error checking initialization status:', error);
       return false;
     }
-  }, [user?.wallet?.address]);
+  }, [wallets]);
 
   const initializeAccount = useCallback(async () => {
-    if (!user?.wallet?.address) {
+    if (!wallets.length) {
       setError('No wallet connected');
       return;
     }
@@ -66,13 +79,24 @@ export const useDelegatedAccount = () => {
     setError(null);
 
     try {
-      const userAddress = user.wallet.address;
+      // Find ONLY embedded wallet - strictly filter for Privy embedded wallets (following useWalletBalance pattern)
+      const embeddedWallet = wallets.find(wallet => 
+        wallet.connectorType === 'embedded' && 
+        wallet.walletClientType === 'privy'
+      ) || null;
+      
+      if (!embeddedWallet?.address) {
+        setError('No embedded wallet found');
+        return;
+      }
+
+      const embeddedAddress = embeddedWallet.address;
       
       // Create the account configuration matching the Go implementation
       const config: AccountConfig = {
-        owner: userAddress,
-        delegate: userAddress, // Same as owner in the Go implementation
-        feeRecipient: userAddress, // Can be updated to a different address if needed
+        owner: embeddedAddress,
+        delegate: embeddedAddress, // Same as owner in the Go implementation
+        feeRecipient: embeddedAddress, // Can be updated to a different address if needed
         minExchangeRate: FEE_CONFIG.MIN_EXCHANGE_RATE,
         maxExchangeRate: FEE_CONFIG.MAX_EXCHANGE_RATE,
         minRequiredFee: FEE_CONFIG.MIN_FEE,
@@ -88,9 +112,9 @@ export const useDelegatedAccount = () => {
       const iface = new ethers.Interface(delegatedAccountABI);
       const initData = iface.encodeFunctionData('initializeWithConfig', [config]);
 
-      // Send the transaction
+      // Send the transaction to the embedded wallet address
       const txResult = await sendTransaction({
-        to: CONTRACT_ADDRESSES.DELEGATED_ACCOUNT,
+        to: embeddedAddress, // ← Send to embedded wallet address
         data: initData,
       });
 
@@ -115,7 +139,7 @@ export const useDelegatedAccount = () => {
     } finally {
       setIsInitializing(false);
     }
-  }, [user?.wallet?.address, sendTransaction]);
+  }, [wallets, sendTransaction]);
 
   return {
     initializeAccount,
