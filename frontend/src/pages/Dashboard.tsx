@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Zap } from 'lucide-react';
+import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Zap, Play } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
 import { useDelegatedAccount } from '@/hooks/useDelegatedAccount';
+import { useTestScenario } from '@/hooks/useTestScenario';
 
 const Dashboard = () => {
   const { ready, authenticated, user, logout } = usePrivy();
@@ -32,6 +33,13 @@ const Dashboard = () => {
     isInitialized,
     error: delegatedError,
   } = useDelegatedAccount();
+
+  const {
+    executeWorkflow,
+    isExecuting,
+    result: workflowResult,
+    error: workflowError,
+  } = useTestScenario();
   
   const [copied, setCopied] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -411,9 +419,52 @@ const Dashboard = () => {
                 Your real estate investment portfolio and opportunities
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium">Test Workflow Execution</h3>
+                <p className="text-sm text-muted-foreground">
+                  Execute the real estate property analysis workflow using KRNL network
+                </p>
+                
+                <Button
+                  onClick={executeWorkflow}
+                  disabled={isExecuting}
+                  className="flex items-center justify-center"
+                >
+                  {isExecuting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Executing Workflow...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-2 h-4 w-4" />
+                      Test Scenario
+                    </>
+                  )}
+                </Button>
+
+                {workflowError && (
+                  <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+                    Error: {workflowError}
+                  </div>
+                )}
+
+                {workflowResult && (
+                  <div className="text-sm bg-green-50 p-3 rounded space-y-2">
+                    <div className="font-medium text-green-800">Workflow Executed Successfully!</div>
+                    <details className="text-green-700">
+                      <summary className="cursor-pointer">View Result</summary>
+                      <pre className="mt-2 text-xs overflow-auto">
+                        {JSON.stringify(workflowResult, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                )}
+              </div>
+
               <p className="text-muted-foreground">
-                Investment features will be available here.
+                Additional investment features will be available here.
               </p>
             </CardContent>
           </Card>
