@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWallets, useSign7702Authorization } from '@privy-io/react-auth';
 import { getRequiredChainId } from '../utils/chains';
 import { initializeWasm } from '../utils/transactionSerializer';
+import { useDelegatedAccount}  from './useDelegatedAccount';
 
 export const useSmartAccountAuth = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -30,6 +31,7 @@ export const useSmartAccountAuth = () => {
     
     try {
       const provider = await embeddedWallet.getEthereumProvider();
+      console.log(' ======> [embeddedWallet]:', embeddedWallet.chainId, embeddedWallet.address, provider);
       const authStatus = await checkEIP7702Authorization(provider, embeddedWallet.address, smartContractAddress);
       setIsAuthorized(authStatus.isAuthorized);
       setSmartAccountEnabled(authStatus.smartAccountEnabled);
@@ -52,11 +54,15 @@ export const useSmartAccountAuth = () => {
     
     try {
       const provider = await embeddedWallet.getEthereumProvider();
+
+      console.log(' [embeddedWallet]:', embeddedWallet.chainId, embeddedWallet.address);
+
       const currentNonce = await provider.request({
         method: 'eth_getTransactionCount',
         params: [embeddedWallet.address, 'latest']
       });
       const authNonce = parseInt(currentNonce, 16);
+      console.log('Current nonce:', authNonce);
       const authorization = await signAuthorization({
         contractAddress: smartContractAddress as `0x${string}`,
         chainId: getRequiredChainId(),
@@ -130,11 +136,22 @@ export const useSmartAccountAuth = () => {
       if (c.error) {
         throw new Error(`WASM compile error: ${c.error}`);
       }
-      
+
+      const chainId = await (window.ethereum as any).request({ method: 'eth_chainId' });
+      console.log('Current chainId:', chainId);
+
+      if (chainId !== '0xaa36a7') { // Sepolia chain ID in hex
+        await (window.ethereum as any).request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0xaa36a7' }], // Sepolia chain ID in hex
+        });
+      }
+      console.log('Broadcasting transaction:', c.signedTx);
       const broadcastTxHash = await (window.ethereum as any).request({
         method: 'eth_sendRawTransaction',
         params: [c.signedTx]
       });
+
       const result = { success: true, transactionHash: broadcastTxHash };
       
       if (result.success) {
@@ -184,6 +201,7 @@ export const useSmartAccountAuth = () => {
         setTxHash(null);
         setSmartAccountEnabled(true);
         await checkAuthorizationStatus();
+        await useDelegatedAccount();
         return true;
       } else {
         throw new Error('Transaction failed');
@@ -226,6 +244,8 @@ async function checkEIP7702Authorization(provider: any, walletAddress: string, c
       method: 'eth_getCode',
       params: [walletAddress, 'latest']
     });
+
+    console.log('Fetched account code:', accountCode);
     
     const smartAccountEnabled = accountCode && accountCode !== '0x' && accountCode.length > 2;
     
@@ -241,6 +261,7 @@ async function checkEIP7702Authorization(provider: any, walletAddress: string, c
         
         // Authorization is true if wallet code contains the contract address
         isAuthorized = accountCodeWithoutPrefix.includes(contractAddressWithoutPrefix);
+        console.log(isAuthorized ? 'Contract address found in wallet code.' : 'Contract address NOT found in wallet code.');
         
         console.log('Authorization check results:');
         console.log('- Wallet address:', walletAddress);

@@ -37,12 +37,10 @@ export const useWalletBalance = () => {
       // Check if we need to switch networks
       if (currentChainIdDecimal !== requiredChainId) {
         setIsSwitching(true);
-        
         const switched = await switchNetwork(provider, requiredChainId);
         if (!switched) {
           throw new Error(`Failed to switch to required network (Chain ID: ${requiredChainId})`);
         }
-        
         setIsSwitching(false);
       }
       

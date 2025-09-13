@@ -20,7 +20,7 @@ const PrivyProvider = ({ children }: PrivyProviderProps) => {
           requireUserPasswordOnCreate: false,
         },
         defaultChain: {
-          id: 1, // Ethereum Mainnet
+          id: 11155111, // Ethereum Mainnet
           name: 'Ethereum',
           network: 'homestead',
           nativeCurrency: {
@@ -30,16 +30,16 @@ const PrivyProvider = ({ children }: PrivyProviderProps) => {
           },
           rpcUrls: {
             default: {
-              http: ['https://mainnet.infura.io/v3/'],
+              http: ['https://ethereum-sepolia-rpc.publicnode.com'],
             },
             public: {
-              http: ['https://mainnet.infura.io/v3/'],
+              http: ['https://ethereum-sepolia-rpc.publicnode.com'],
             },
           },
           blockExplorers: {
             default: {
               name: 'Etherscan',
-              url: 'https://etherscan.io',
+              url: 'https://sepolia.etherscan.io/',
             },
           },
         },
