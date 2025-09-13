@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Zap, Play } from 'lucide-react';
+import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Zap, Play, Plus, Cog } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
 import { useDelegatedAccount } from '@/hooks/useDelegatedAccount';
@@ -27,10 +27,13 @@ const Dashboard = () => {
   } = useSmartAccountAuth();
   
   const {
-    initializeAccount,
+    initializeBasic,
+    initializeWithConfig,
+    addDestinationToWhitelist,
     checkInitialized,
     isInitializing,
     isInitialized,
+    isAddingToWhitelist,
     error: delegatedError,
   } = useDelegatedAccount();
 
@@ -49,8 +52,10 @@ const Dashboard = () => {
     console.log('Dashboard Debug Info:');
     console.log('- Smart Contract Address:', smartContractAddress);
     console.log('- Embedded Wallet Address:', embeddedWallet?.address);
+    console.log('- Is Initialized:', isInitialized);
+    console.log('- Is Authorized:', isAuthorized);
     console.log('- Show Authorization Section:', embeddedWallet?.address && smartContractAddress && smartContractAddress !== '0x0000000000000000000000000000000000000000');
-  }, [smartContractAddress, embeddedWallet?.address]);
+  }, [smartContractAddress, embeddedWallet?.address, isInitialized, isAuthorized]);
 
   // Check if delegated account is initialized
   useEffect(() => {
@@ -331,11 +336,44 @@ const Dashboard = () => {
                   </div>
                 </div>
 
+                {/* Always show whitelist button */}
+                <div className="pt-4">
+                  <Button
+                    onClick={async () => {
+                      const realEstateAddress = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
+                      const mockUsdcAddress = import.meta.env.VITE_MOCK_USDC_ADDRESS;
+                      
+                      // Add both addresses to whitelist
+                      if (realEstateAddress) {
+                        await addDestinationToWhitelist(realEstateAddress);
+                      }
+                      if (mockUsdcAddress) {
+                        await addDestinationToWhitelist(mockUsdcAddress);
+                      }
+                    }}
+                    disabled={isAddingToWhitelist}
+                    variant="secondary"
+                    className="w-full flex items-center justify-center"
+                  >
+                    {isAddingToWhitelist ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Adding Contracts to Whitelist...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Contracts to Whitelist
+                      </>
+                    )}
+                  </Button>
+                </div>
+
                 {embeddedWallet?.address && smartContractAddress && smartContractAddress !== '0x0000000000000000000000000000000000000000' && smartContractAddress !== '0x' && (
                   <div className="space-y-3 pt-2">
                     <div className="grid grid-cols-1 gap-3">
                       <Button
-                        onClick={initializeAccount}
+                        onClick={initializeBasic}
                         disabled={isInitializing || isInitialized || !isAuthorized}
                         variant={isInitialized ? "outline" : "default"}
                         className="flex items-center justify-center"
@@ -348,7 +386,26 @@ const Dashboard = () => {
                         ) : (
                           <>
                             <Zap className="mr-2 h-4 w-4" />
-                            {isInitialized ? 'Account Initialized' : 'Initialize Delegated Account'}
+                            {isInitialized ? 'Account Initialized' : 'Initialize Basic Account'}
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        onClick={initializeWithConfig}
+                        disabled={isInitializing || isInitialized || !isAuthorized}
+                        variant={isInitialized ? "outline" : "secondary"}
+                        className="flex items-center justify-center"
+                      >
+                        {isInitializing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Initializing with Config...
+                          </>
+                        ) : (
+                          <>
+                            <Cog className="mr-2 h-4 w-4" />
+                            {isInitialized ? 'Account Configured' : 'Initialize with Config'}
                           </>
                         )}
                       </Button>

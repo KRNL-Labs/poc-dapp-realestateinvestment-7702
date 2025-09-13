@@ -10,6 +10,8 @@ const CONTRACT_ADDRESSES = {
   REAL_ESTATE_INVESTMENT: import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS,
 };
 
+const DELEGATE_OWNER = import.meta.env.VITE_DELEGATE_OWNER;
+
 const FEE_CONFIG = {
   MIN_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MIN_EXCHANGE_RATE || '2900000000000000000000'),
   MAX_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MAX_EXCHANGE_RATE || '4000000000000000000000'),
@@ -34,6 +36,7 @@ export const useDelegatedAccount = () => {
   const { wallets } = useWallets();
   const [isInitializing, setIsInitializing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isAddingToWhitelist, setIsAddingToWhitelist] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const checkInitialized = useCallback(async () => {
@@ -61,15 +64,31 @@ export const useDelegatedAccount = () => {
       );
 
       const initialized = await contract.isInitialized();
-      setIsInitialized(initialized);
-      return initialized;
+      const owner = await contract.owner();
+      console.log('cccc', owner)
+      
+      if (!initialized) {
+        setIsInitialized(false);
+        return false;
+      }
+      
+      // Additional check: Verify RealEstate contract is whitelisted
+      const realEstateWhitelisted = await contract.isDestinationWhitelisted(
+        CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT
+      );
+
+      console.log('xxxx',realEstateWhitelisted)
+      
+      const fullyInitialized = initialized && realEstateWhitelisted;
+      setIsInitialized(fullyInitialized);
+      return fullyInitialized;
     } catch (error) {
       console.error('Error checking initialization status:', error);
       return false;
     }
   }, [wallets]);
 
-  const initializeAccount = useCallback(async () => {
+  const initializeBasic = useCallback(async () => {
     if (!wallets.length) {
       setError('No wallet connected');
       return;
@@ -79,7 +98,69 @@ export const useDelegatedAccount = () => {
     setError(null);
 
     try {
-      // Find ONLY embedded wallet - strictly filter for Privy embedded wallets (following useWalletBalance pattern)
+      // Find ONLY embedded wallet - strictly filter for Privy embedded wallets
+      const embeddedWallet = wallets.find(wallet => 
+        wallet.connectorType === 'embedded' && 
+        wallet.walletClientType === 'privy'
+      ) || null;
+      
+      if (!embeddedWallet?.address) {
+        setError('No embedded wallet found');
+        return;
+      }
+
+      const embeddedAddress = embeddedWallet.address;
+
+      // Encode the basic initialization data - use full function signature for overloaded function
+      const iface = new ethers.Interface(delegatedAccountABI);
+      const initData = iface.encodeFunctionData('initialize(address,address,uint256,uint256,uint256,uint256)', [
+        embeddedAddress,                    // owner
+        DELEGATE_OWNER,                     // delegate
+        FEE_CONFIG.MIN_EXCHANGE_RATE,       // minExchangeRate
+        FEE_CONFIG.MAX_EXCHANGE_RATE,       // maxExchangeRate
+        FEE_CONFIG.MIN_FEE,                 // minRequiredFee
+        FEE_CONFIG.MAX_FEE                  // maxFeePerTransaction
+      ]);
+
+      // Send the transaction to the embedded wallet address
+      const txResult = await sendTransaction({
+        to: embeddedAddress,
+        data: initData,
+      });
+
+      const txHash = txResult.hash;
+      console.log('Basic initialization transaction sent:', txHash);
+      
+      // Wait for confirmation
+      const provider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+      const receipt = await provider.waitForTransaction(txHash);
+      
+      if (receipt?.status === 1) {
+        console.log('Account basic initialization successful');
+        // Note: Don't set isInitialized to true yet, as whitelist still needs to be configured
+      } else {
+        throw new Error('Transaction failed');
+      }
+      
+    } catch (error) {
+      console.error('Error with basic initialization:', error);
+      setError(error instanceof Error ? error.message : 'Failed to initialize account');
+    } finally {
+      setIsInitializing(false);
+    }
+  }, [wallets, sendTransaction]);
+
+  const initializeWithConfig = useCallback(async () => {
+    if (!wallets.length) {
+      setError('No wallet connected');
+      return;
+    }
+
+    setIsInitializing(true);
+    setError(null);
+
+    try {
+      // Find ONLY embedded wallet - strictly filter for Privy embedded wallets
       const embeddedWallet = wallets.find(wallet => 
         wallet.connectorType === 'embedded' && 
         wallet.walletClientType === 'privy'
@@ -92,11 +173,11 @@ export const useDelegatedAccount = () => {
 
       const embeddedAddress = embeddedWallet.address;
       
-      // Create the account configuration matching the Go implementation
+      // Create the account configuration with whitelist
       const config: AccountConfig = {
         owner: embeddedAddress,
-        delegate: embeddedAddress, // Same as owner in the Go implementation
-        feeRecipient: embeddedAddress, // Can be updated to a different address if needed
+        delegate: DELEGATE_OWNER,
+        feeRecipient: embeddedAddress,
         minExchangeRate: FEE_CONFIG.MIN_EXCHANGE_RATE,
         maxExchangeRate: FEE_CONFIG.MAX_EXCHANGE_RATE,
         minRequiredFee: FEE_CONFIG.MIN_FEE,
@@ -108,44 +189,124 @@ export const useDelegatedAccount = () => {
         destinationStatuses: [true, true], // Both whitelisted
       };
 
-      // Encode the initialization data
+      // Encode the initialization data with config
       const iface = new ethers.Interface(delegatedAccountABI);
       const initData = iface.encodeFunctionData('initializeWithConfig', [config]);
 
       // Send the transaction to the embedded wallet address
       const txResult = await sendTransaction({
-        to: embeddedAddress, // ← Send to embedded wallet address
+        to: embeddedAddress,
         data: initData,
       });
 
       const txHash = txResult.hash;
-      console.log('Initialization transaction sent:', txHash);
+      console.log('Config initialization transaction sent:', txHash);
       
       // Wait for confirmation
       const provider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
-      
       const receipt = await provider.waitForTransaction(txHash);
       
       if (receipt?.status === 1) {
         setIsInitialized(true);
-        console.log('Account initialized successfully');
+        console.log('Account initialized with config successfully');
       } else {
         throw new Error('Transaction failed');
       }
       
     } catch (error) {
-      console.error('Error initializing account:', error);
-      setError(error instanceof Error ? error.message : 'Failed to initialize account');
+      console.error('Error initializing with config:', error);
+      setError(error instanceof Error ? error.message : 'Failed to initialize account with config');
     } finally {
       setIsInitializing(false);
     }
   }, [wallets, sendTransaction]);
 
+  const addDestinationToWhitelist = useCallback(async (destinationAddress: string) => {
+    if (!wallets.length) {
+      setError('No wallet connected');
+      return;
+    }
+
+    if (!destinationAddress || !ethers.isAddress(destinationAddress)) {
+      setError('Invalid destination address');
+      return;
+    }
+
+    setIsAddingToWhitelist(true);
+    setError(null);
+
+    try {
+      // Find ONLY embedded wallet - strictly filter for Privy embedded wallets
+      const embeddedWallet = wallets.find(wallet => 
+        wallet.connectorType === 'embedded' && 
+        wallet.walletClientType === 'privy'
+      ) || null;
+      
+      if (!embeddedWallet?.address) {
+        setError('No embedded wallet found');
+        return;
+      }
+
+      const embeddedAddress = embeddedWallet.address;
+
+      // Check if already whitelisted
+      const provider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+      const contract = new ethers.Contract(
+        embeddedAddress,
+        delegatedAccountABI,
+        provider
+      );
+
+      const isWhitelisted = await contract.isDestinationWhitelisted(destinationAddress);
+      if (isWhitelisted) {
+        setError('Address is already whitelisted');
+        return;
+      }
+
+      // Encode the updateDestinationWhitelist call
+      const iface = new ethers.Interface(delegatedAccountABI);
+      const updateWhitelistData = iface.encodeFunctionData('updateDestinationWhitelist', [
+        destinationAddress,
+        true // whitelist the address
+      ]);
+
+      // Since updateDestinationWhitelist requires msg.sender == address(this),
+      // we need to call it through the account itself (self-call)
+      const txResult = await sendTransaction({
+        to: embeddedAddress,
+        data: updateWhitelistData,
+      });
+
+      const txHash = txResult.hash;
+      console.log('Whitelist update transaction sent:', txHash);
+      
+      // Wait for confirmation
+      const receipt = await provider.waitForTransaction(txHash);
+      
+      if (receipt?.status === 1) {
+        console.log('Destination whitelisted successfully:', destinationAddress);
+        return true;
+      } else {
+        throw new Error('Transaction failed');
+      }
+      
+    } catch (error) {
+      console.error('Error adding to whitelist:', error);
+      setError(error instanceof Error ? error.message : 'Failed to add destination to whitelist');
+      return false;
+    } finally {
+      setIsAddingToWhitelist(false);
+    }
+  }, [wallets, sendTransaction]);
+
   return {
-    initializeAccount,
+    initializeBasic,
+    initializeWithConfig,
+    addDestinationToWhitelist,
     checkInitialized,
     isInitializing,
     isInitialized,
+    isAddingToWhitelist,
     error,
   };
 };
