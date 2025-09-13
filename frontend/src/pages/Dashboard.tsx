@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings } from 'lucide-react';
+import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Zap } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
+import { useDelegatedAccount } from '@/hooks/useDelegatedAccount';
 
 const Dashboard = () => {
   const { ready, authenticated, user, logout } = usePrivy();
@@ -24,6 +25,14 @@ const Dashboard = () => {
     txHash
   } = useSmartAccountAuth();
   
+  const {
+    initializeAccount,
+    checkInitialized,
+    isInitializing,
+    isInitialized,
+    error: delegatedError,
+  } = useDelegatedAccount();
+  
   const [copied, setCopied] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -34,6 +43,13 @@ const Dashboard = () => {
     console.log('- Embedded Wallet Address:', embeddedWallet?.address);
     console.log('- Show Authorization Section:', embeddedWallet?.address && smartContractAddress && smartContractAddress !== '0x0000000000000000000000000000000000000000');
   }, [smartContractAddress, embeddedWallet?.address]);
+
+  // Check if delegated account is initialized
+  useEffect(() => {
+    if (embeddedWallet?.address) {
+      checkInitialized();
+    }
+  }, [embeddedWallet?.address, checkInitialized]);
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -311,6 +327,25 @@ const Dashboard = () => {
                   <div className="space-y-3 pt-2">
                     <div className="grid grid-cols-1 gap-3">
                       <Button
+                        onClick={initializeAccount}
+                        disabled={isInitializing || isInitialized || !isAuthorized}
+                        variant={isInitialized ? "outline" : "default"}
+                        className="flex items-center justify-center"
+                      >
+                        {isInitializing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Initializing Account...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="mr-2 h-4 w-4" />
+                            {isInitialized ? 'Account Initialized' : 'Initialize Delegated Account'}
+                          </>
+                        )}
+                      </Button>
+                      
+                      <Button
                         onClick={async () => {
                           const result = await enableSmartAccount();
                           if (result) {
@@ -352,9 +387,9 @@ const Dashboard = () => {
                       </div>
                     )}
 
-                    {authError && (
+                    {(authError || delegatedError) && (
                       <div className="text-center text-sm text-red-600 bg-red-50 p-2 rounded">
-                        Error: {authError}
+                        Error: {authError || delegatedError}
                       </div>
                     )}
 
