@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Zap, Play, Plus, Cog } from 'lucide-react';
+import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Zap, Play, Plus, Cog, Download } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
 import { useDelegatedAccount } from '@/hooks/useDelegatedAccount';
@@ -30,10 +30,12 @@ const Dashboard = () => {
     initializeBasic,
     initializeWithConfig,
     addDestinationToWhitelist,
+    backupPrivateKey,
     checkInitialized,
     isInitializing,
     isInitialized,
     isAddingToWhitelist,
+    isExportingKey,
     error: delegatedError,
   } = useDelegatedAccount();
 
@@ -249,6 +251,25 @@ const Dashboard = () => {
                     >
                       <ExternalLink className="mr-2 h-3 w-3" />
                       View on Explorer
+                    </Button>
+                    <Button
+                      onClick={backupPrivateKey}
+                      disabled={isExportingKey}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      {isExportingKey ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Exporting...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-3 w-3" />
+                          Backup Wallet
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}

@@ -32,11 +32,12 @@ interface AccountConfig {
 }
 
 export const useDelegatedAccount = () => {
-  const { user, sendTransaction } = usePrivy();
+  const { user, sendTransaction, exportWallet } = usePrivy();
   const { wallets } = useWallets();
   const [isInitializing, setIsInitializing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAddingToWhitelist, setIsAddingToWhitelist] = useState(false);
+  const [isExportingKey, setIsExportingKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const checkInitialized = useCallback(async () => {
@@ -299,14 +300,63 @@ export const useDelegatedAccount = () => {
     }
   }, [wallets, sendTransaction]);
 
+  const backupPrivateKey = useCallback(async () => {
+    if (!wallets.length) {
+      setError('No wallet connected');
+      return;
+    }
+
+    setIsExportingKey(true);
+    setError(null);
+
+    try {
+      // Find ONLY embedded wallet - strictly filter for Privy embedded wallets
+      const embeddedWallet = wallets.find(wallet => 
+        wallet.connectorType === 'embedded' && 
+        wallet.walletClientType === 'privy'
+      ) || null;
+      
+      if (!embeddedWallet) {
+        setError('No embedded wallet found');
+        return;
+      }
+
+      // Privy's exportWallet function opens a modal for the user to export their wallet
+      // This is a secure way to export the private key with user authentication
+      if (exportWallet) {
+        await exportWallet();
+        console.log('Wallet export modal opened successfully');
+        return true;
+      } else {
+        // If exportWallet is not available, try using the wallet's export method directly
+        if ('export' in embeddedWallet && typeof embeddedWallet.export === 'function') {
+          await embeddedWallet.export();
+          console.log('Wallet exported successfully');
+          return true;
+        } else {
+          setError('Wallet export not supported. Please check Privy dashboard for backup options.');
+          return false;
+        }
+      }
+    } catch (error) {
+      console.error('Error exporting wallet:', error);
+      setError(error instanceof Error ? error.message : 'Failed to export wallet');
+      return false;
+    } finally {
+      setIsExportingKey(false);
+    }
+  }, [wallets, exportWallet]);
+
   return {
     initializeBasic,
     initializeWithConfig,
     addDestinationToWhitelist,
+    backupPrivateKey,
     checkInitialized,
     isInitializing,
     isInitialized,
     isAddingToWhitelist,
+    isExportingKey,
     error,
   };
 };
