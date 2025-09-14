@@ -1,5 +1,5 @@
 {
-  "sender": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "sender": "{{ENV.SENDER_ADDRESS}}",
   "executionFee": "0.01",
   "workflow": {
     "name": "real-estate-investment-submit-property-analysis",
@@ -9,11 +9,11 @@
         "type": 10,
         "name": "property-data-fetcher",
         "image": "ghcr.io/krnl-labs/executor-http@sha256:7ea7eae002f173aab994444e9e0863f8a8fd8255c7ed3a234218e66c3e1f3c60",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeid3msoebov6o54rtvjtrdwv7fg6tkeye2skrxh6jis25zok6pavzi",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "market-data-fetcher",
         "config": {},
         "inputs": {
-          "url": "https://talented-top-kite.ngrok-free.app/zillow/webservice/GetSearchResults.htm?zws-id=demo-api-key&address=1234-Maple-Street&citystatezip=Austin,TX",
+          "url": "https://poc.platform.lat/zillow/webservice/GetSearchResults.htm?zws-id=demo-api-key&address=1234-Maple-Street&citystatezip=Austin,TX",
           "method": "GET"
         },
         "outputs": [
@@ -52,11 +52,11 @@
       {
         "name": "market-data-fetcher",
         "image": "ghcr.io/krnl-labs/executor-http@sha256:7ea7eae002f173aab994444e9e0863f8a8fd8255c7ed3a234218e66c3e1f3c60",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeid3msoebov6o54rtvjtrdwv7fg6tkeye2skrxh6jis25zok6pavzi",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "ai-property-analysis",
         "config": {},
         "inputs": {
-          "url": "https://talented-top-kite.ngrok-free.app/zillow/webservice/GetZestimate.htm?zws-id=demo-api-key&zpid=${property-data-fetcher.zpid}",
+          "url": "https://poc.platform.lat/zillow/webservice/GetZestimate.htm?zws-id=demo-api-key&zpid=${property-data-fetcher.zpid}",
           "method": "GET"
         },
         "outputs": [
@@ -119,7 +119,7 @@
       {
         "name": "ai-property-analysis",
         "image": "ghcr.io/krnl-labs/executor-http@sha256:7ea7eae002f173aab994444e9e0863f8a8fd8255c7ed3a234218e66c3e1f3c60",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeid3msoebov6o54rtvjtrdwv7fg6tkeye2skrxh6jis25zok6pavzi",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "construct-property-analysis-evm",
         "config": {},
         "inputs": {
@@ -162,7 +162,7 @@
       {
         "name": "construct-property-analysis-evm",
         "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeid3msoebov6o54rtvjtrdwv7fg6tkeye2skrxh6jis25zok6pavzi",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "prepare-authdata",
         "config": {
           "parameters": [
@@ -217,13 +217,13 @@
       {
         "name": "prepare-authdata",
         "image": "ghcr.io/krnl-labs/executor-prepare-authdata@sha256:3a1c9c8828da07f1da367b91fbd0a41f47274af63bc521a6c2499aee04e02e30",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeid3msoebov6o54rtvjtrdwv7fg6tkeye2skrxh6jis25zok6pavzi",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "target-calldata",
         "config": {
           "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
-          "target_contract": "0x069637A39353E19334D82C6aEB460Cbb92D5Dc9b",
+          "target_contract": "{{ENV.TARGET_CONTRACT}}",
           "function_signature": "submitPropertyAnalysis((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes))",
-          "sender": "0x3dB2eac708DCd7833dDc87d2f3A25eEde0621a55",
+          "sender": "{{ENV.SENDER_ADDRESS}}",
           "sponsor_execution_fee": true
         },
         "inputs": {
@@ -278,7 +278,7 @@
       {
         "name": "target-calldata",
         "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeid3msoebov6o54rtvjtrdwv7fg6tkeye2skrxh6jis25zok6pavzi",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "sca-calldata",
         "config": {
           "function_signature": "submitPropertyAnalysis((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes))",
@@ -358,7 +358,7 @@
       {
         "name": "sca-calldata",
         "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeid3msoebov6o54rtvjtrdwv7fg6tkeye2skrxh6jis25zok6pavzi",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "bundle",
         "config": {
           "function_signature": "execute(address,uint256,bytes,uint256,uint256)",
@@ -387,7 +387,7 @@
         },
         "inputs": {
           "value": {
-            "dest": "0x069637A39353E19334D82C6aEB460Cbb92D5Dc9b",
+            "dest": "{{ENV.TARGET_CONTRACT}}",
             "value": "0",
             "func": "${target-calldata.result}",
             "feeUsdcAmount": "1000001",
@@ -406,15 +406,15 @@
       {
         "name": "bundle",
         "image": "ghcr.io/krnl-labs/executor-data-bundle@sha256:ff49252428eb8adcb1462d0d8ab4c46e2bb2eb5576ec7d717430197597beba78",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeid3msoebov6o54rtvjtrdwv7fg6tkeye2skrxh6jis25zok6pavzi",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "config": {
           "chain_id": 11155111,
-          "sender": "0x3dB2eac708DCd7833dDc87d2f3A25eEde0621a55",
+          "sender": "{{ENV.SENDER_ADDRESS}}",
           "bundler_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_AFZB7SRqytR4SQ7x7jpNxd",
           "paymaster_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_AFZB7SRqytR4SQ7x7jpNxd",
           "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
           "entrypoint_address": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-          "target_contract": "0x069637A39353E19334D82C6aEB460Cbb92D5Dc9b",
+          "target_contract": "{{ENV.TARGET_CONTRACT}}",
           "function_signature": "execute(address,uint256,bytes,uint256,uint256)",
           "gas_limit": "100000",
           "max_fee_per_gas": "20000000000",
@@ -447,8 +447,8 @@
   },
   "dapp": {
     "name": "real-estate-investment",
-    "targetChainID": 1,
-    "targetContractAddress": "0x1987654321098765432109876543210987654321",
-    "targetFunctionSignature": "monitorDeFi(address,uint256)"
+    "targetChainID": 11155111,
+    "targetContractAddress": "{{ENV.TARGET_CONTRACT}}",
+    "targetFunctionSignature": "submitPropertyAnalysis((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes))"
   }
 }

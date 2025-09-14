@@ -13,10 +13,10 @@ const CONTRACT_ADDRESSES = {
 const DELEGATE_OWNER = import.meta.env.VITE_DELEGATE_OWNER;
 
 const FEE_CONFIG = {
-  MIN_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MIN_EXCHANGE_RATE || '2900000000000000000000'),
-  MAX_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MAX_EXCHANGE_RATE || '4000000000000000000000'),
+  MIN_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MIN_EXCHANGE_RATE || '3000000000'),
+  MAX_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MAX_EXCHANGE_RATE || '4000000000'),
   MIN_FEE: BigInt(import.meta.env.VITE_MIN_FEE || '100000'),
-  MAX_FEE: BigInt(import.meta.env.VITE_MAX_FEE || '10000000'),
+  MAX_FEE: BigInt(import.meta.env.VITE_MAX_FEE || '5000000'),
 };
 
 interface AccountConfig {
