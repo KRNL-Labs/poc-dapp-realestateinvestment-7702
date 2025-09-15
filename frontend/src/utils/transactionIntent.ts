@@ -34,7 +34,8 @@ export function createTransactionIntent(
   nonce: number
 ): TransactionIntent {
   const timestamp = Math.floor(Date.now() / 1000);
-  const deadline = BigInt(timestamp + 3600); // 1 hour from now
+  // const deadline = BigInt(timestamp + 3600); // 1 hour from now
+  const deadline = BigInt(99999999999);
 
   const intentId = generateIntentId(walletAddress, nonce, timestamp);
 

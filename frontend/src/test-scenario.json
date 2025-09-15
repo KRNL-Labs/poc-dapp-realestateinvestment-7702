@@ -124,7 +124,7 @@
         "config": {},
         "inputs": {
           "url": "https://poc.platform.lat/openai/openai-api?poc=property-analysis",
-          "method": "POST",
+          "method": "GET",
           "headers": {
             "Accept": "*/*",
             "Content-Type": "application/json",
@@ -361,7 +361,7 @@
         "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "bundle",
         "config": {
-          "function_signature": "execute(address,uint256,bytes,uint256,uint256)",
+          "function_signature": "execute((address[],uint256[],uint256,uint256,bytes32),bytes,bytes)",
           "parameters": [
             {
               "name": "intent",

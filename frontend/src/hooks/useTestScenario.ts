@@ -88,35 +88,105 @@ export const useTestScenario = () => {
       // Step 4: Prepare workflow with signature
       const workflowData = JSON.parse(JSON.stringify(testScenarioData));
 
-      // Replace placeholders with actual values including signature
-      const replacePlaceholders = (obj: any): any => {
-        if (typeof obj === 'string') {
-          return obj
-            .replace(/\{\{ENV\.SENDER_ADDRESS\}\}/g, embeddedWallet.address)
-            .replace(/\{\{ENV\.TARGET_CONTRACT\}\}/g, REAL_ESTATE_INVESTMENT_ADDRESS)
-            .replace(/\{\{TRANSACTION_INTENT_DESTINATIONS\}\}/g, JSON.stringify(transactionIntent.destinations))
-            .replace(/\{\{TRANSACTION_INTENT_VALUES\}\}/g, JSON.stringify(transactionIntent.values.map(v => v.toString())))
-            .replace(/\{\{TRANSACTION_INTENT_ID\}\}/g, transactionIntent.id)
-            .replace(/\{\{TRANSACTION_INTENT_NONCE\}\}/g, transactionIntent.nonce.toString())
-            .replace(/\{\{TRANSACTION_INTENT_DEADLINE\}\}/g, transactionIntent.deadline.toString())
-            .replace(/\{\{USER_SIGNATURE\}\}/g, signature);
-        }
-        if (Array.isArray(obj)) {
-          return obj.map(replacePlaceholders);
-        }
-        if (obj !== null && typeof obj === 'object') {
-          const result: any = {};
-          for (const key in obj) {
-            result[key] = replacePlaceholders(obj[key]);
+      // Flatten the workflowData into a key-value map with dot notation
+      const flattenObject = (obj: any, prefix = ''): Record<string, any> => {
+        const flattened: Record<string, any> = {};
+
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            const newKey = prefix ? `${prefix}.${key}` : key;
+
+            if (obj[key] === null || obj[key] === undefined) {
+              flattened[newKey] = obj[key];
+            } else if (Array.isArray(obj[key])) {
+              // Handle arrays with index notation
+              obj[key].forEach((item: any, index: number) => {
+                if (typeof item === 'object' && item !== null) {
+                  Object.assign(flattened, flattenObject(item, `${newKey}.${index}`));
+                } else {
+                  flattened[`${newKey}.${index}`] = item;
+                }
+              });
+            } else if (typeof obj[key] === 'object') {
+              // Recursively flatten nested objects
+              Object.assign(flattened, flattenObject(obj[key], newKey));
+            } else {
+              // Primitive values
+              flattened[newKey] = obj[key];
+            }
           }
-          return result;
         }
-        return obj;
+
+        return flattened;
       };
 
-      const processedWorkflow = replacePlaceholders(workflowData);
+      const flattenedWorkflowData = flattenObject(workflowData);
 
-      console.log('Processed workflow with signature:', processedWorkflow);
+      // Replace placeholders with actual values in the flattened data
+      for (const key in flattenedWorkflowData) {
+        // temp fix
+        flattenedWorkflowData['workflow.steps.5.inputs.value.authData.executions'] = [];
+
+        if (typeof flattenedWorkflowData[key] === 'string') {
+          const value = flattenedWorkflowData[key];
+
+          // Check for specific array placeholders and replace with actual arrays
+          if (value === '{{TRANSACTION_INTENT_DESTINATIONS}}') {
+            flattenedWorkflowData[key] = transactionIntent.destinations;
+          } else if (value === '{{TRANSACTION_INTENT_VALUES}}') {
+            flattenedWorkflowData[key] = transactionIntent.values.map(v => v.toString());
+          } else {
+            // For other placeholders, do string replacement
+            flattenedWorkflowData[key] = value
+              .replace(/\{\{ENV\.SENDER_ADDRESS\}\}/g, embeddedWallet.address)
+              .replace(/\{\{ENV\.TARGET_CONTRACT\}\}/g, REAL_ESTATE_INVESTMENT_ADDRESS)
+              .replace(/\{\{TRANSACTION_INTENT_ID\}\}/g, transactionIntent.id)
+              .replace(/\{\{TRANSACTION_INTENT_NONCE\}\}/g, transactionIntent.nonce.toString())
+              .replace(/\{\{TRANSACTION_INTENT_DEADLINE\}\}/g, transactionIntent.deadline.toString())
+              .replace(/\{\{USER_SIGNATURE\}\}/g, signature);
+          }
+        }
+      }
+
+      // Unflatten the flattenedWorkflowData back to nested object
+      const unflattenObject = (flattened: Record<string, any>): any => {
+        const result: any = {};
+
+        for (const key in flattened) {
+          const keys = key.split('.');
+          let current = result;
+
+          for (let i = 0; i < keys.length; i++) {
+            const part = keys[i];
+            const isLastKey = i === keys.length - 1;
+
+            if (isLastKey) {
+              current[part] = flattened[key];
+            } else {
+              const nextPart = keys[i + 1];
+              const isNextPartNumeric = /^\d+$/.test(nextPart);
+
+              if (isNextPartNumeric) {
+                // Next part is an array index
+                if (!current[part]) {
+                  current[part] = [];
+                }
+                current = current[part];
+              } else {
+                // Next part is an object key
+                if (!current[part]) {
+                  current[part] = {};
+                }
+                current = current[part];
+              }
+            }
+          }
+        }
+
+        return result;
+      };
+
+      const processedWorkflow = unflattenObject(flattenedWorkflowData);
 
       // const payload = {
       //   workflow: processedWorkflow
@@ -129,6 +199,8 @@ export const useTestScenario = () => {
       //   },
       //   body: JSON.stringify(payload)
       // });
+
+      console.log('Processed workflow with signature:', JSON.stringify(processedWorkflow));
 
       const payload = {
         id: 1,
