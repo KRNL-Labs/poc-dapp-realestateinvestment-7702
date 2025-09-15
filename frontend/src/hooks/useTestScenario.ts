@@ -6,22 +6,30 @@ export const useTestScenario = () => {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const executeWorkflow = async () => {
+  const executeWorkflow = async (payloadString :string) => {
     setIsExecuting(true);
     setError(null);
     setResult(null);
 
     try {
-      const payload = {
-        workflow: testScenarioData
-      };
+      // const payload = {
+      //   workflow: testScenarioData
+      // };
+
+      // const response = await fetch('http://localhost:8080/api/execute-workflow', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(payload)
+      // });
 
       const response = await fetch('http://localhost:8080/api/execute-workflow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload)
+        body: payloadString
       });
 
       if (!response.ok) {

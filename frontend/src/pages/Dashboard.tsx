@@ -43,6 +43,8 @@ const Dashboard = () => {
   
   const [copied, setCopied] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showWorkflowInput, setShowWorkflowInput] = useState(false);
+  const [workflowInput, setWorkflowInput] = useState('');
 
   // Debug logging
   useEffect(() => {
@@ -426,23 +428,60 @@ const Dashboard = () => {
                   Execute the real estate property analysis workflow using KRNL network
                 </p>
                 
-                <Button
-                  onClick={executeWorkflow}
-                  disabled={isExecuting}
-                  className="flex items-center justify-center"
-                >
-                  {isExecuting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Executing Workflow...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="mr-2 h-4 w-4" />
-                      Test Scenario
-                    </>
+                {/* Test Workflow Execution UI */}
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => setShowWorkflowInput(true)}
+                    disabled={isExecuting}
+                    className="flex items-center justify-center"
+                  >
+                    <Play className="mr-2 h-4 w-4" />
+                    Test Scenario
+                  </Button>
+
+                  {showWorkflowInput && (
+                    <div className="border rounded-lg p-4 mt-2 space-y-3 bg-muted/30">
+                      <label className="block text-sm font-medium mb-1">
+                        Workflow Parameter (JSON)
+                      </label>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm font-mono"
+                        rows={4}
+                        value={workflowInput}
+                        onChange={e => setWorkflowInput(e.target.value)}
+                        placeholder='{"propertyId": "123", "analysisType": "basic"}'
+                      />
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={async () => {
+                            await executeWorkflow(workflowInput);
+                            setShowWorkflowInput(false);
+                          }}
+                          disabled={isExecuting || !workflowInput}
+                          className="flex items-center justify-center"
+                        >
+                          {isExecuting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="mr-2 h-4 w-4" />
+                              Process
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowWorkflowInput(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
                   )}
-                </Button>
+                </div>
 
                 {/* Init Data Button using useDelegatedAccount */}
                 <Button
