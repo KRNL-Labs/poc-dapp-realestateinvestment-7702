@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Zap, Play, Plus, Cog, Download } from 'lucide-react';
+import { LogOut, Loader2, Wallet, Copy, ExternalLink, RefreshCw, Shield, CheckCircle, XCircle, Settings, Play, Download, UserCheck } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
 import { useDelegatedAccount } from '@/hooks/useDelegatedAccount';
 import { useTestScenario } from '@/hooks/useTestScenario';
+import { CheckEventsButton } from '@/components/CheckEventsButton';
+import { ethers } from 'ethers';
 
 const Dashboard = () => {
   const { ready, authenticated, user, logout } = usePrivy();
@@ -27,14 +29,10 @@ const Dashboard = () => {
   } = useSmartAccountAuth();
   
   const {
-    initializeBasic,
-    initializeWithConfig,
-    addDestinationToWhitelist,
     backupPrivateKey,
     checkInitialized,
-    isInitializing,
+    checkContractsWhitelisted,
     isInitialized,
-    isAddingToWhitelist,
     isExportingKey,
     error: delegatedError,
   } = useDelegatedAccount();
@@ -47,6 +45,8 @@ const Dashboard = () => {
   } = useTestScenario();
   
   const [copied, setCopied] = useState(false);
+  const [isDelegating, setIsDelegating] = useState(false);
+  const [isDelegated, setIsDelegated] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Debug logging
@@ -63,8 +63,9 @@ const Dashboard = () => {
   useEffect(() => {
     if (embeddedWallet?.address) {
       checkInitialized();
+      checkContractsWhitelisted();
     }
-  }, [embeddedWallet?.address, checkInitialized]);
+  }, [embeddedWallet?.address, checkInitialized, checkContractsWhitelisted]);
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -82,6 +83,73 @@ const Dashboard = () => {
       navigator.clipboard.writeText(embeddedWallet.address);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDelegation = async () => {
+    if (!embeddedWallet) {
+      console.error('No embedded wallet found');
+      return;
+    }
+
+    setIsDelegating(true);
+    try {
+      const realEstateAddress = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
+
+      if (!realEstateAddress) {
+        throw new Error('Real Estate Investment contract address not configured');
+      }
+
+      const provider = await embeddedWallet.getEthereumProvider();
+
+      // ABI for updateDelegate function
+      const updateDelegateABI = [
+        {
+          name: 'updateDelegate',
+          type: 'function',
+          inputs: [
+            { name: '_newDelegate', type: 'address' }
+          ],
+          outputs: [],
+        }
+      ];
+
+      // Encode the function call
+      const iface = new ethers.Interface(updateDelegateABI);
+      const calldata = iface.encodeFunctionData('updateDelegate', [realEstateAddress]);
+
+      // Send transaction from embedded wallet to itself (delegated account)
+      // The updateDelegate function should be called on address(this)
+      const tx = {
+        to: embeddedWallet.address, // Call on the delegated account itself
+        data: calldata,
+        value: '0x0'
+      };
+
+      console.log('Delegating to Real Estate contract:', realEstateAddress);
+
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [tx]
+      });
+
+      console.log('Delegation transaction sent:', txHash);
+
+      // Wait for confirmation
+      const publicProvider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+      const receipt = await publicProvider.waitForTransaction(txHash);
+
+      if (receipt?.status === 1) {
+        setIsDelegated(true);
+        console.log('Delegation successful');
+      } else {
+        throw new Error('Delegation transaction failed');
+      }
+    } catch (error) {
+      console.error('Delegation failed:', error);
+      setIsDelegated(false);
+    } finally {
+      setIsDelegating(false);
     }
   };
 
@@ -357,104 +425,50 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Always show whitelist button */}
-                <div className="pt-4">
-                  <Button
-                    onClick={async () => {
-                      const realEstateAddress = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
-                      const mockUsdcAddress = import.meta.env.VITE_MOCK_USDC_ADDRESS;
-                      
-                      // Add both addresses to whitelist
-                      if (realEstateAddress) {
-                        await addDestinationToWhitelist(realEstateAddress);
-                      }
-                      if (mockUsdcAddress) {
-                        await addDestinationToWhitelist(mockUsdcAddress);
-                      }
-                    }}
-                    disabled={isAddingToWhitelist}
-                    variant="secondary"
-                    className="w-full flex items-center justify-center"
-                  >
-                    {isAddingToWhitelist ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding Contracts to Whitelist...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Contracts to Whitelist
-                      </>
-                    )}
-                  </Button>
-                </div>
-
                 {embeddedWallet?.address && smartContractAddress && smartContractAddress !== '0x0000000000000000000000000000000000000000' && smartContractAddress !== '0x' && (
-                  <div className="space-y-3 pt-2">
-                    <div className="grid grid-cols-1 gap-3">
-                      <Button
-                        onClick={initializeBasic}
-                        disabled={isInitializing || isInitialized || !isAuthorized}
-                        variant={isInitialized ? "outline" : "default"}
-                        className="flex items-center justify-center"
-                      >
-                        {isInitializing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Initializing Account...
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="mr-2 h-4 w-4" />
-                            {isInitialized ? 'Account Initialized' : 'Initialize Basic Account'}
-                          </>
-                        )}
-                      </Button>
+                  <div className="space-y-3 pt-4">
+                    <Button
+                      onClick={async () => {
+                        const result = await enableSmartAccount();
+                        if (result) {
+                          // Success feedback could be added here
+                        }
+                      }}
+                      disabled={authLoading || waitingForTx || isAuthorized}
+                      variant={isAuthorized ? "outline" : "default"}
+                      className="w-full flex items-center justify-center"
+                    >
+                      {waitingForTx ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Waiting for transaction...
+                        </>
+                      ) : (
+                        <>
+                          <Settings className="mr-2 h-4 w-4" />
+                          {isAuthorized ? 'Already Authorized' : 'Authorize Smart Account'}
+                        </>
+                      )}
+                    </Button>
 
-                      <Button
-                        onClick={initializeWithConfig}
-                        disabled={isInitializing || isInitialized || !isAuthorized}
-                        variant={isInitialized ? "outline" : "secondary"}
-                        className="flex items-center justify-center"
-                      >
-                        {isInitializing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Initializing with Config...
-                          </>
-                        ) : (
-                          <>
-                            <Cog className="mr-2 h-4 w-4" />
-                            {isInitialized ? 'Account Configured' : 'Initialize with Config'}
-                          </>
-                        )}
-                      </Button>
-                      
-                      <Button
-                        onClick={async () => {
-                          const result = await enableSmartAccount();
-                          if (result) {
-                            // Success feedback could be added here
-                          }
-                        }}
-                        disabled={authLoading || waitingForTx || isAuthorized}
-                        variant={isAuthorized ? "outline" : "default"}
-                        className="flex items-center justify-center"
-                      >
-                        {waitingForTx ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Waiting for transaction...
-                          </>
-                        ) : (
-                          <>
-                            <Settings className="mr-2 h-4 w-4" />
-                            {isAuthorized ? 'Already Authorized' : 'Authorize Smart Account'}
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={handleDelegation}
+                      disabled={isDelegating || isDelegated || !isAuthorized}
+                      variant={isDelegated ? "outline" : "secondary"}
+                      className="w-full flex items-center justify-center"
+                    >
+                      {isDelegating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Delegating...
+                        </>
+                      ) : (
+                        <>
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          {isDelegated ? 'Already Delegated' : 'Delegate to this Dapp'}
+                        </>
+                      )}
+                    </Button>
 
                     {waitingForTx && txHash && (
                       <div className="text-center text-sm text-blue-600 bg-blue-50 p-2 rounded">
@@ -521,6 +535,15 @@ const Dashboard = () => {
                     </>
                   )}
                 </Button>
+
+                <CheckEventsButton
+                  onEventsFound={(events) => {
+                    console.log('Events found from Dashboard:', events);
+                  }}
+                  onError={(error) => {
+                    console.error('Error checking events:', error);
+                  }}
+                />
 
                 {workflowError && (
                   <div className="text-sm text-red-600 bg-red-50 p-3 rounded">

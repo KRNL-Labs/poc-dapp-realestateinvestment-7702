@@ -1,37 +1,44 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { useWallets } from '@privy-io/react-auth';
 import { encodePacked, keccak256 } from 'viem';
-import testScenarioData from '../test-scenario.json';
+import testScenarioData from '@/test-scenario.json';
 import {
   createTransactionIntent,
   getCurrentNonce
-} from '../utils/transactionIntent';
+} from '@/utils/transactionIntent';
 
 const REAL_ESTATE_INVESTMENT_ADDRESS = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
 
-export const useTestScenario = () => {
-  const { wallets } = useWallets();
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+interface TestScenarioButtonProps {
+  onSuccess?: (result: any) => void;
+  onError?: (error: Error) => void;
+}
 
-  const executeWorkflow = async () => {
-    setIsExecuting(true);
-    setError(null);
-    setResult(null);
+export function TestScenarioButton({
+  onSuccess,
+  onError
+}: TestScenarioButtonProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { wallets } = useWallets();
+
+  // Find ONLY embedded wallet - strictly filter for Privy embedded wallets
+  const embeddedWallet = wallets.find(wallet =>
+    wallet.connectorType === 'embedded' &&
+    wallet.walletClientType === 'privy'
+  ) || null;
+
+  const handleTestScenario = async () => {
+    if (!embeddedWallet?.address) {
+      console.error('No embedded wallet found');
+      onError?.(new Error('Please connect your embedded wallet first'));
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
-      // Get embedded wallet address
-      const embeddedWallet = wallets.find(wallet =>
-        wallet.connectorType === 'embedded' &&
-        wallet.walletClientType === 'privy'
-      );
-
-      if (!embeddedWallet?.address) {
-        throw new Error('No embedded wallet found');
-      }
-
-      // Step 1: Get current nonce from contract and create TransactionIntent
+      // Step 1: Get provider and current nonce from contract
       const provider = await embeddedWallet.getEthereumProvider();
 
       // Ensure we're on the right network first
@@ -69,11 +76,14 @@ export const useTestScenario = () => {
 
       // Step 3: Request signature from user using Privy embedded wallet
 
-      console.log('Requesting signature from user for workflow execution...');
+      console.log('Requesting signature from user...');
+      console.log('Provider:', provider);
+      console.log('Wallet address:', embeddedWallet.address);
 
       let signature: `0x${string}`;
       try {
         // Use personal_sign for message signing - this should trigger Privy popup
+        // Format: personal_sign requires hex string
         signature = await provider.request({
           method: 'personal_sign',
           params: [intentHash, embeddedWallet.address]
@@ -85,7 +95,7 @@ export const useTestScenario = () => {
         throw new Error(`Failed to get signature: ${signError.message || signError}`);
       }
 
-      // Step 4: Prepare workflow with signature
+      // Step 4: Prepare the workflow with signature
       const workflowData = JSON.parse(JSON.stringify(testScenarioData));
 
       // Replace placeholders with actual values including signature
@@ -94,8 +104,6 @@ export const useTestScenario = () => {
           return obj
             .replace(/\{\{ENV\.SENDER_ADDRESS\}\}/g, embeddedWallet.address)
             .replace(/\{\{ENV\.TARGET_CONTRACT\}\}/g, REAL_ESTATE_INVESTMENT_ADDRESS)
-            .replace(/\{\{TRANSACTION_INTENT_DESTINATIONS\}\}/g, JSON.stringify(transactionIntent.destinations))
-            .replace(/\{\{TRANSACTION_INTENT_VALUES\}\}/g, JSON.stringify(transactionIntent.values.map(v => v.toString())))
             .replace(/\{\{TRANSACTION_INTENT_ID\}\}/g, transactionIntent.id)
             .replace(/\{\{TRANSACTION_INTENT_NONCE\}\}/g, transactionIntent.nonce.toString())
             .replace(/\{\{TRANSACTION_INTENT_DEADLINE\}\}/g, transactionIntent.deadline.toString())
@@ -116,20 +124,19 @@ export const useTestScenario = () => {
 
       const processedWorkflow = replacePlaceholders(workflowData);
 
-      console.log('Processed workflow with signature:', processedWorkflow);
+      // Add transaction intent to workflow
+      processedWorkflow.transactionIntent = {
+        destinations: transactionIntent.destinations,
+        values: transactionIntent.values.map(v => v.toString()),
+        nonce: transactionIntent.nonce.toString(),
+        deadline: transactionIntent.deadline.toString(),
+        id: transactionIntent.id,
+        signature: signature
+      };
 
-      // const payload = {
-      //   workflow: processedWorkflow
-      // };
+      console.log('Processed Test Scenario with signature:', processedWorkflow);
 
-      // const response = await fetch('http://localhost:8080/api/execute-workflow', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(payload)
-      // });
-
+      // Create KRNL JSON-RPC request
       const payload = {
         id: 1,
         jsonrpc: '2.0',
@@ -137,6 +144,7 @@ export const useTestScenario = () => {
         params: [processedWorkflow]
       };
 
+      // Send directly to KRNL node
       const response = await fetch('https://v0-1-0.node.lat/', {
         method: 'POST',
         headers: {
@@ -151,21 +159,48 @@ export const useTestScenario = () => {
       }
 
       const data = await response.json();
-      setResult(data);
       console.log('Workflow execution result:', data);
-      
+      onSuccess?.(data);
+
     } catch (error) {
-      console.error('Error executing workflow:', error);
-      setError(error instanceof Error ? error.message : 'Failed to execute workflow');
+      console.error('Error in test scenario:', error);
+      onError?.(error as Error);
     } finally {
-      setIsExecuting(false);
+      setIsLoading(false);
     }
   };
 
-  return {
-    executeWorkflow,
-    isExecuting,
-    result,
-    error,
+  return (
+    <Button
+      onClick={handleTestScenario}
+      disabled={isLoading || !embeddedWallet?.address}
+      className="bg-blue-600 hover:bg-blue-700"
+    >
+      {isLoading ? 'Generating...' : 'Test Scenario'}
+    </Button>
+  );
+}
+
+// Example usage in a parent component:
+/*
+function Dashboard() {
+  const handleSuccess = (result) => {
+    console.log('Scenario executed successfully:', result);
+    // Show success notification or update UI
   };
-};
+
+  const handleError = (error) => {
+    console.error('Scenario failed:', error);
+    // Show error notification
+  };
+
+  return (
+    <TestScenarioButton
+      propertyAddress="1234-Maple-Street"
+      propertyCityStateZip="Austin,TX"
+      onSuccess={handleSuccess}
+      onError={handleError}
+    />
+  );
+}
+*/

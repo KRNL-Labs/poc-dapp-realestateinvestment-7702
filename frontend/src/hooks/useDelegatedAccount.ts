@@ -38,6 +38,7 @@ export const useDelegatedAccount = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAddingToWhitelist, setIsAddingToWhitelist] = useState(false);
   const [isExportingKey, setIsExportingKey] = useState(false);
+  const [areContractsWhitelisted, setAreContractsWhitelisted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const checkInitialized = useCallback(async () => {
@@ -300,6 +301,44 @@ export const useDelegatedAccount = () => {
     }
   }, [wallets, sendTransaction]);
 
+  const checkContractsWhitelisted = useCallback(async () => {
+    if (!wallets.length) return false;
+
+    try {
+      // Find ONLY embedded wallet
+      const embeddedWallet = wallets.find(wallet =>
+        wallet.connectorType === 'embedded' &&
+        wallet.walletClientType === 'privy'
+      ) || null;
+
+      if (!embeddedWallet) return false;
+
+      const provider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+      const contract = new ethers.Contract(
+        embeddedWallet.address,
+        delegatedAccountABI,
+        provider
+      );
+
+      // Check if both contracts are whitelisted
+      const [realEstateWhitelisted, mockUsdcWhitelisted] = await Promise.all([
+        CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT ?
+          contract.isDestinationWhitelisted(CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT) :
+          Promise.resolve(true),
+        CONTRACT_ADDRESSES.MOCK_USDC ?
+          contract.isDestinationWhitelisted(CONTRACT_ADDRESSES.MOCK_USDC) :
+          Promise.resolve(true)
+      ]);
+
+      const allWhitelisted = realEstateWhitelisted && mockUsdcWhitelisted;
+      setAreContractsWhitelisted(allWhitelisted);
+      return allWhitelisted;
+    } catch (error) {
+      console.error('Error checking whitelist status:', error);
+      return false;
+    }
+  }, [wallets]);
+
   const backupPrivateKey = useCallback(async () => {
     if (!wallets.length) {
       setError('No wallet connected');
@@ -353,10 +392,12 @@ export const useDelegatedAccount = () => {
     addDestinationToWhitelist,
     backupPrivateKey,
     checkInitialized,
+    checkContractsWhitelisted,
     isInitializing,
     isInitialized,
     isAddingToWhitelist,
     isExportingKey,
+    areContractsWhitelisted,
     error,
   };
 };
