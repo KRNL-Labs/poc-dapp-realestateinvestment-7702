@@ -331,7 +331,7 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {embeddedWallet?.address && smartContractAddress && smartContractAddress !== '0x0000000000000000000000000000000000000000' && smartContractAddress !== '0x' && (
+                {embeddedWallet?.address && smartContractAddress && smartContractAddress !== '0x0000000000000000000000000000000000000000' && smartContractAddress !== '0' && (
                   <div className="space-y-3 pt-2">
                     <div className="grid grid-cols-1 gap-3">
                       <Button
@@ -440,6 +440,26 @@ const Dashboard = () => {
                     <>
                       <Play className="mr-2 h-4 w-4" />
                       Test Scenario
+                    </>
+                  )}
+                </Button>
+
+                {/* Init Data Button using useDelegatedAccount */}
+                <Button
+                  onClick={initializeAccount}
+                  disabled={isInitializing}
+                  className="flex items-center justify-center"
+                  variant={isInitialized ? "destructive" : "default"}
+                >
+                  {isInitializing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Initializing Data...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="mr-2 h-4 w-4" />
+                      {isInitialized ? 'Force Init Data' : 'Init Data'}
                     </>
                   )}
                 </Button>

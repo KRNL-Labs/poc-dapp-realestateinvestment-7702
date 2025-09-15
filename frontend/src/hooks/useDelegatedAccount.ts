@@ -11,10 +11,10 @@ const CONTRACT_ADDRESSES = {
 };
 
 const FEE_CONFIG = {
-  MIN_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MIN_EXCHANGE_RATE || '2900000000000000000000'),
-  MAX_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MAX_EXCHANGE_RATE || '4000000000000000000000'),
-  MIN_FEE: BigInt(import.meta.env.VITE_MIN_FEE || '100000'),
-  MAX_FEE: BigInt(import.meta.env.VITE_MAX_FEE || '10000000'),
+  MIN_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MIN_EXCHANGE_RATE || '1000000000'),
+  MAX_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MAX_EXCHANGE_RATE || '10000000000'),
+  MIN_FEE: BigInt(import.meta.env.VITE_MIN_FEE || '1000000'),
+  MAX_FEE: BigInt(import.meta.env.VITE_MAX_FEE || '5000000'),
 };
 
 interface AccountConfig {
@@ -57,6 +57,8 @@ export const useDelegatedAccount = () => {
   }, [user?.wallet?.address]);
 
   const initializeAccount = useCallback(async () => {
+    console.log('Initializing delegated account...');
+    console.log('User wallet address:', user?.wallet?.address);
     if (!user?.wallet?.address) {
       setError('No wallet connected');
       return;
@@ -71,7 +73,7 @@ export const useDelegatedAccount = () => {
       // Create the account configuration matching the Go implementation
       const config: AccountConfig = {
         owner: userAddress,
-        delegate: userAddress, // Same as owner in the Go implementation
+        delegate: "0x3dB2eac708DCd7833dDc87d2f3A25eEde0621a55", // Same as owner in the Go implementation
         feeRecipient: userAddress, // Can be updated to a different address if needed
         minExchangeRate: FEE_CONFIG.MIN_EXCHANGE_RATE,
         maxExchangeRate: FEE_CONFIG.MAX_EXCHANGE_RATE,
@@ -90,7 +92,7 @@ export const useDelegatedAccount = () => {
 
       // Send the transaction
       const txResult = await sendTransaction({
-        to: CONTRACT_ADDRESSES.DELEGATED_ACCOUNT,
+        to: user.wallet.address,
         data: initData,
       });
 
