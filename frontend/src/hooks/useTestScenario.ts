@@ -12,25 +12,28 @@ export const useTestScenario = () => {
     setResult(null);
 
     try {
-      // const payload = {
-      //   workflow: testScenarioData
-      // };
+      const payloadStringObject = JSON.parse(payloadString);
 
-      // const response = await fetch('http://localhost:8080/api/execute-workflow', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(payload)
-      // });
+      // Construct payload
+      const payload = {
+        workflow: payloadStringObject
+      };
 
       const response = await fetch('http://localhost:8080/api/execute-workflow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: payloadString
+        body: JSON.stringify(payload)
       });
+
+      // const response = await fetch('http://localhost:8080/api/execute-workflow', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: payloadString
+      // });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
