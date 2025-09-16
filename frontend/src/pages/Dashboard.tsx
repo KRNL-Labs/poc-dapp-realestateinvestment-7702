@@ -94,9 +94,9 @@ const Dashboard = () => {
 
     setIsDelegating(true);
     try {
-      const realEstateAddress = import.meta.env.VITE_DELEGATE_OWNER;
+      const delegateOwnerAddress = import.meta.env.VITE_DELEGATE_OWNER;
 
-      if (!realEstateAddress) {
+      if (!delegateOwnerAddress) {
         throw new Error('Delegate address (Masterkey) not configured');
       }
 
@@ -116,7 +116,7 @@ const Dashboard = () => {
 
       // Encode the function call
       const iface = new ethers.Interface(updateDelegateABI);
-      const calldata = iface.encodeFunctionData('updateDelegate', [realEstateAddress]);
+      const calldata = iface.encodeFunctionData('updateDelegate', [delegateOwnerAddress]);
 
       // Send transaction from embedded wallet to itself (delegated account)
       // The updateDelegate function should be called on address(this)
@@ -126,7 +126,7 @@ const Dashboard = () => {
         value: '0x0'
       };
 
-      console.log('Delegating to Delegate address (Masterkey):', realEstateAddress);
+      console.log('Delegating to Delegate address (Masterkey):', delegateOwnerAddress);
 
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
