@@ -94,10 +94,10 @@ const Dashboard = () => {
 
     setIsDelegating(true);
     try {
-      const realEstateAddress = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
+      const realEstateAddress = import.meta.env.VITE_DELEGATE_OWNER;
 
       if (!realEstateAddress) {
-        throw new Error('Real Estate Investment contract address not configured');
+        throw new Error('Delegate address (Masterkey) not configured');
       }
 
       const provider = await embeddedWallet.getEthereumProvider();
@@ -126,7 +126,7 @@ const Dashboard = () => {
         value: '0x0'
       };
 
-      console.log('Delegating to Real Estate contract:', realEstateAddress);
+      console.log('Delegating to Delegate address (Masterkey):', realEstateAddress);
 
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
