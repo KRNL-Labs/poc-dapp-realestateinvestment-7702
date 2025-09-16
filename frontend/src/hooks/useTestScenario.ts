@@ -3,8 +3,7 @@ import { useWallets } from '@privy-io/react-auth';
 import { encodePacked, keccak256 } from 'viem';
 import testScenarioData from '../test-scenario.json';
 import {
-  createTransactionIntent,
-  getCurrentNonce
+  createTransactionIntent
 } from '../utils/transactionIntent';
 
 const REAL_ESTATE_INVESTMENT_ADDRESS = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
@@ -37,8 +36,33 @@ export const useTestScenario = () => {
       // Ensure we're on the right network first
       await embeddedWallet.switchChain(11155111); // Sepolia
 
-      // Fixed nonce to 0 for testing
-      const nonce = 0;
+      // Get current nonce from the contract
+      const { ethers } = await import('ethers');
+      const getCurrentNonceABI = [
+        {
+          name: 'getCurrentNonce',
+          type: 'function',
+          inputs: [],
+          outputs: [{ name: 'nonce', type: 'uint256' }],
+          stateMutability: 'view'
+        }
+      ];
+
+      const getNonceIface = new ethers.Interface(getCurrentNonceABI);
+      const getNonceCalldata = getNonceIface.encodeFunctionData('getCurrentNonce', []);
+
+      const nonceResult = await provider.request({
+        method: 'eth_call',
+        params: [{
+          to: embeddedWallet.address,
+          data: getNonceCalldata
+        }, 'latest']
+      });
+
+      const [currentNonce] = getNonceIface.decodeFunctionResult('getCurrentNonce', nonceResult);
+      const nonce = Number(currentNonce);
+      console.log('Using current contract nonce:', nonce);
+
       const destinations = [REAL_ESTATE_INVESTMENT_ADDRESS];
       const values = [BigInt(0)]; // No ETH value for this transaction
 
@@ -85,7 +109,88 @@ export const useTestScenario = () => {
         throw new Error(`Failed to get signature: ${signError.message || signError}`);
       }
 
-      // Step 4: Prepare workflow with signature
+      // Step 4: Validate signature on contract before proceeding
+      console.log('Validating signature on contract...');
+
+      try {
+        // Validate the signature
+        const validateABI = [
+          {
+            name: 'validateIntentSignature',
+            type: 'function',
+            inputs: [
+              {
+                name: 'intent',
+                type: 'tuple',
+                components: [
+                  { name: 'destinations', type: 'address[]' },
+                  { name: 'values', type: 'uint256[]' },
+                  { name: 'nonce', type: 'uint256' },
+                  { name: 'deadline', type: 'uint256' },
+                  { name: 'id', type: 'bytes32' }
+                ]
+              },
+              { name: 'signature', type: 'bytes' }
+            ],
+            outputs: [
+              { name: 'isValid', type: 'bool' },
+              { name: 'signer', type: 'address' }
+            ],
+            stateMutability: 'view'
+          }
+        ];
+
+        const iface = new ethers.Interface(validateABI);
+
+        // Prepare the intent struct
+        const intentStruct = {
+          destinations: transactionIntent.destinations,
+          values: transactionIntent.values.map(v => v.toString()),
+          nonce: transactionIntent.nonce.toString(),
+          deadline: transactionIntent.deadline.toString(),
+          id: transactionIntent.id
+        };
+
+        // Encode the function call
+        const calldata = iface.encodeFunctionData('validateIntentSignature', [
+          intentStruct,
+          signature
+        ]);
+
+        // Call the validation function
+        const result = await provider.request({
+          method: 'eth_call',
+          params: [{
+            to: embeddedWallet.address, // Call on user's delegated account
+            data: calldata
+          }, 'latest']
+        });
+
+        // Decode the result
+        const [isValid, signer] = iface.decodeFunctionResult('validateIntentSignature', result);
+
+        console.log('Signature validation result:', {
+          isValid,
+          signer,
+          expectedSigner: embeddedWallet.address
+        });
+
+        if (!isValid) {
+          console.error('Signature validation failed!');
+          console.error(`Recovered signer: ${signer}`);
+          console.error(`Expected signer: ${embeddedWallet.address}`);
+          setError('Signature validation failed. The signature does not match the wallet address.');
+          return; // Exit early if validation fails
+        }
+
+        console.log('✅ Signature validation passed!');
+      } catch (validationError: any) {
+        console.error('Error validating signature:', validationError);
+        setError(`Signature validation error: ${validationError.message || validationError}`);
+        return; // Exit early if validation fails
+      }
+
+      // Step 5: Prepare workflow with signature
       const workflowData = JSON.parse(JSON.stringify(testScenarioData));
 
       // Flatten the workflowData into a key-value map with dot notation
