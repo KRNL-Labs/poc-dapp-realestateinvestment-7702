@@ -5,6 +5,7 @@ import testScenarioData from '../test-scenario.json';
 import {
   createTransactionIntent
 } from '../utils/transactionIntent';
+import DelegatedAccountABI from '../contracts/Delegated7702Account.abi.json';
 
 const REAL_ESTATE_INVESTMENT_ADDRESS = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
 
@@ -36,20 +37,10 @@ export const useTestScenario = () => {
       // Ensure we're on the right network first
       await embeddedWallet.switchChain(11155111); // Sepolia
 
-      // Get current nonce from the contract
+      // Get current nonce from the contract using ABI
       const { ethers } = await import('ethers');
-      const getCurrentNonceABI = [
-        {
-          name: 'getCurrentNonce',
-          type: 'function',
-          inputs: [],
-          outputs: [{ name: 'nonce', type: 'uint256' }],
-          stateMutability: 'view'
-        }
-      ];
-
-      const getNonceIface = new ethers.Interface(getCurrentNonceABI);
-      const getNonceCalldata = getNonceIface.encodeFunctionData('getCurrentNonce', []);
+      const contractInterface = new ethers.Interface(DelegatedAccountABI);
+      const getNonceCalldata = contractInterface.encodeFunctionData('getCurrentNonce', []);
 
       const nonceResult = await provider.request({
         method: 'eth_call',
@@ -59,7 +50,8 @@ export const useTestScenario = () => {
         }, 'latest']
       });
 
-      const [currentNonce] = getNonceIface.decodeFunctionResult('getCurrentNonce', nonceResult);
+      const [currentNonce] = contractInterface.decodeFunctionResult('getCurrentNonce', nonceResult);
+      console.log(currentNonce)
       const nonce = Number(currentNonce);
       console.log('Using current contract nonce:', nonce);
 
@@ -113,34 +105,8 @@ export const useTestScenario = () => {
       console.log('Validating signature on contract...');
 
       try {
-        // Validate the signature
-        const validateABI = [
-          {
-            name: 'validateIntentSignature',
-            type: 'function',
-            inputs: [
-              {
-                name: 'intent',
-                type: 'tuple',
-                components: [
-                  { name: 'destinations', type: 'address[]' },
-                  { name: 'values', type: 'uint256[]' },
-                  { name: 'nonce', type: 'uint256' },
-                  { name: 'deadline', type: 'uint256' },
-                  { name: 'id', type: 'bytes32' }
-                ]
-              },
-              { name: 'signature', type: 'bytes' }
-            ],
-            outputs: [
-              { name: 'isValid', type: 'bool' },
-              { name: 'signer', type: 'address' }
-            ],
-            stateMutability: 'view'
-          }
-        ];
-
-        const iface = new ethers.Interface(validateABI);
+        // Validate the signature using ABI
+        const iface = contractInterface;
 
         // Prepare the intent struct
         const intentStruct = {

@@ -25,7 +25,20 @@
     },
     {
       "type": "function",
-      "name": "FEE_RECIPIENT",
+      "name": "PROTOCOL_FEE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "VaultAddress",
       "inputs": [],
       "outputs": [
         {
@@ -76,21 +89,16 @@
     },
     {
       "type": "function",
-      "name": "batchUpdateDestinationWhitelist",
-      "inputs": [
+      "name": "currentNonce",
+      "inputs": [],
+      "outputs": [
         {
-          "name": "destinations",
-          "type": "address[]",
-          "internalType": "address[]"
-        },
-        {
-          "name": "whitelisted",
-          "type": "bool[]",
-          "internalType": "bool[]"
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
+      "stateMutability": "view"
     },
     {
       "type": "function",
@@ -123,17 +131,44 @@
       "name": "execute",
       "inputs": [
         {
-          "name": "dest",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "value",
-          "type": "uint256",
-          "internalType": "uint256"
+          "name": "intent",
+          "type": "tuple",
+          "internalType": "struct Delegated7702AccountV2.TransactionIntent",
+          "components": [
+            {
+              "name": "destinations",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "values",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "id",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ]
         },
         {
           "name": "func",
+          "type": "bytes",
+          "internalType": "bytes"
+        },
+        {
+          "name": "signature",
           "type": "bytes",
           "internalType": "bytes"
         }
@@ -159,16 +194,6 @@
           "name": "func",
           "type": "bytes",
           "internalType": "bytes"
-        },
-        {
-          "name": "feeUsdcAmount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "usdcPerEth",
-          "type": "uint256",
-          "internalType": "uint256"
         }
       ],
       "outputs": [],
@@ -220,28 +245,63 @@
       "name": "executeBatch",
       "inputs": [
         {
-          "name": "dest",
-          "type": "address[]",
-          "internalType": "address[]"
+          "name": "intent",
+          "type": "tuple",
+          "internalType": "struct Delegated7702AccountV2.TransactionIntent",
+          "components": [
+            {
+              "name": "destinations",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "values",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "id",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ]
         },
         {
-          "name": "func",
+          "name": "funcs",
           "type": "bytes[]",
           "internalType": "bytes[]"
         },
         {
-          "name": "feeUsdcAmount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "usdcPerEth",
-          "type": "uint256",
-          "internalType": "uint256"
+          "name": "signature",
+          "type": "bytes",
+          "internalType": "bytes"
         }
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "getCurrentNonce",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "nonce",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
       "type": "function",
@@ -297,44 +357,6 @@
       "name": "initialize",
       "inputs": [
         {
-          "name": "_owner",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "_delegate",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "_minExchangeRate",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "_maxExchangeRate",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "_minRequiredFee",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "_maxFeePerTransaction",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "initialize",
-      "inputs": [
-        {
           "name": "anOwner",
           "type": "address",
           "internalType": "address"
@@ -342,80 +364,6 @@
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "initializeWithConfig",
-      "inputs": [
-        {
-          "name": "config",
-          "type": "tuple",
-          "internalType": "struct Delegated7702Account.AccountConfig",
-          "components": [
-            {
-              "name": "owner",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "delegate",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "minExchangeRate",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "maxExchangeRate",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "minRequiredFee",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "maxFeePerTransaction",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "initialDestinations",
-              "type": "address[]",
-              "internalType": "address[]"
-            },
-            {
-              "name": "destinationStatuses",
-              "type": "bool[]",
-              "internalType": "bool[]"
-            }
-          ]
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "isDestinationWhitelisted",
-      "inputs": [
-        {
-          "name": "destination",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "whitelisted",
-          "type": "bool",
-          "internalType": "bool"
-        }
-      ],
-      "stateMutability": "view"
     },
     {
       "type": "function",
@@ -456,52 +404,7 @@
     },
     {
       "type": "function",
-      "name": "isWhitelistedDestination",
-      "inputs": [
-        {
-          "name": "",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool",
-          "internalType": "bool"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "maxExchangeRate",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
       "name": "maxFeePerTransaction",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "minExchangeRate",
       "inputs": [],
       "outputs": [
         {
@@ -652,6 +555,13 @@
     },
     {
       "type": "function",
+      "name": "revokeDelegate",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "supportsInterface",
       "inputs": [
         {
@@ -671,17 +581,12 @@
     },
     {
       "type": "function",
-      "name": "updateDestinationWhitelist",
+      "name": "updateDelegate",
       "inputs": [
         {
-          "name": "destination",
+          "name": "_newDelegate",
           "type": "address",
           "internalType": "address"
-        },
-        {
-          "name": "whitelisted",
-          "type": "bool",
-          "internalType": "bool"
         }
       ],
       "outputs": [],
@@ -693,19 +598,6 @@
       "inputs": [
         {
           "name": "_hardCap",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "updateMaxExchangeRate",
-      "inputs": [
-        {
-          "name": "_maxRate",
           "type": "uint256",
           "internalType": "uint256"
         }
@@ -728,19 +620,6 @@
     },
     {
       "type": "function",
-      "name": "updateMinExchangeRate",
-      "inputs": [
-        {
-          "name": "_minRate",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
       "name": "updateMinFee",
       "inputs": [
         {
@@ -751,6 +630,62 @@
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "validateIntentSignature",
+      "inputs": [
+        {
+          "name": "intent",
+          "type": "tuple",
+          "internalType": "struct Delegated7702AccountV2.TransactionIntent",
+          "components": [
+            {
+              "name": "destinations",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "values",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "id",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ]
+        },
+        {
+          "name": "signature",
+          "type": "bytes",
+          "internalType": "bytes"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "isValid",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "signer",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
       "type": "function",
@@ -830,6 +765,25 @@
     },
     {
       "type": "event",
+      "name": "DelegateUpdated",
+      "inputs": [
+        {
+          "name": "oldDelegate",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "newDelegate",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
       "name": "DelegateUsed",
       "inputs": [
         {
@@ -843,25 +797,6 @@
           "type": "bytes32",
           "indexed": false,
           "internalType": "bytes32"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "DestinationWhitelistUpdated",
-      "inputs": [
-        {
-          "name": "destination",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        },
-        {
-          "name": "whitelisted",
-          "type": "bool",
-          "indexed": false,
-          "internalType": "bool"
         }
       ],
       "anonymous": false
@@ -886,7 +821,7 @@
           "name": "feeBreakdown",
           "type": "tuple",
           "indexed": false,
-          "internalType": "struct Delegated7702Account.FeeBreakdown",
+          "internalType": "struct Delegated7702AccountV2.FeeBreakdown",
           "components": [
             {
               "name": "protocolFee",
@@ -894,44 +829,7 @@
               "internalType": "uint256"
             },
             {
-              "name": "executionFees",
-              "type": "tuple[]",
-              "internalType": "struct Delegated7702Account.ExecutionFee[]",
-              "components": [
-                {
-                  "name": "id",
-                  "type": "bytes32",
-                  "internalType": "bytes32"
-                },
-                {
-                  "name": "fee",
-                  "type": "uint256",
-                  "internalType": "uint256"
-                }
-              ]
-            },
-            {
-              "name": "platformFee",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "reserved1",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "reserved2",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "reserved3",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "totalFee",
+              "name": "executionFee",
               "type": "uint256",
               "internalType": "uint256"
             }
@@ -960,7 +858,7 @@
           "name": "sponsoredFees",
           "type": "tuple",
           "indexed": false,
-          "internalType": "struct Delegated7702Account.FeeBreakdown",
+          "internalType": "struct Delegated7702AccountV2.FeeBreakdown",
           "components": [
             {
               "name": "protocolFee",
@@ -968,44 +866,7 @@
               "internalType": "uint256"
             },
             {
-              "name": "executionFees",
-              "type": "tuple[]",
-              "internalType": "struct Delegated7702Account.ExecutionFee[]",
-              "components": [
-                {
-                  "name": "id",
-                  "type": "bytes32",
-                  "internalType": "bytes32"
-                },
-                {
-                  "name": "fee",
-                  "type": "uint256",
-                  "internalType": "uint256"
-                }
-              ]
-            },
-            {
-              "name": "platformFee",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "reserved1",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "reserved2",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "reserved3",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "totalFee",
+              "name": "executionFee",
               "type": "uint256",
               "internalType": "uint256"
             }
@@ -1123,15 +984,34 @@
       "anonymous": false
     },
     {
-      "type": "error",
-      "name": "DestinationNotWhitelisted",
+      "type": "event",
+      "name": "TransactionIntentExecuted",
       "inputs": [
         {
-          "name": "destination",
+          "name": "intentId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "nonce",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "executor",
           "type": "address",
+          "indexed": true,
           "internalType": "address"
         }
-      ]
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "ArrayLengthMismatch",
+      "inputs": []
     },
     {
       "type": "error",
@@ -1205,10 +1085,10 @@
     },
     {
       "type": "error",
-      "name": "InvalidExchangeRate",
+      "name": "IntentExpired",
       "inputs": [
         {
-          "name": "rate",
+          "name": "deadline",
           "type": "uint256",
           "internalType": "uint256"
         }
@@ -1217,6 +1097,16 @@
     {
       "type": "error",
       "name": "InvalidInitialization",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidNonce",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidSignature",
       "inputs": []
     },
     {
