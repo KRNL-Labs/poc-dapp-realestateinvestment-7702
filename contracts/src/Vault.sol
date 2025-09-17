@@ -6,17 +6,16 @@ pragma solidity ^0.8.23;
  * @notice Vault for fee collection
  */
 contract Vault {
-    // Event for fee deposits
     event FeeCollected(address indexed sender, address indexed nodeAddress, address targetContract, address targetOwner, uint256 nodeFee, uint256 protocolFee);
 
     address public owner;
 
     uint256 public protocolFees;
 
-    uint256 public NODE_FEE = 0.001 ether;
+    mapping(address => uint256) public NODE_FEE;
+    uint256 public defaultNodeFee = 0.001 ether;
     uint256 public PROTOCOL_FEE = 0.001 ether;
 
-    // Mappings for tracking node fees
     mapping(address => uint256) public nodeFees;
 
     constructor(address _owner, uint256 _nodeFee, uint256 _protocolFee ) {
@@ -26,12 +25,32 @@ contract Vault {
         } else {
             owner = _owner;
         }
+
         if (_nodeFee > 0) {
-            NODE_FEE = _nodeFee;
+            defaultNodeFee = _nodeFee;
         }
+        
         if (_protocolFee > 0) {
             PROTOCOL_FEE = _protocolFee;
         }
+    }
+
+    function setNodeFee(address node, uint256 fee) external {
+        require(msg.sender == owner, "Only owner can set node fee");
+        NODE_FEE[node] = fee;
+    }
+
+    function setDefaultNodeFee(uint256 fee) external {
+        require(msg.sender == owner, "Only owner can set default node fee");
+        defaultNodeFee = fee;
+    }
+
+    function getNodeFee(address node) public view returns (uint256) {
+        uint256 fee = NODE_FEE[node];
+        if (fee == 0) {
+            return defaultNodeFee;
+        }
+        return fee;
     }
 
     function depositFees(
@@ -39,10 +58,11 @@ contract Vault {
         address targetContract,
         address targetOwner
     ) external payable {
-        require(NODE_FEE + PROTOCOL_FEE == msg.value, "Invalid fee deposition");
-        nodeFees[nodeAddress] += NODE_FEE;
+        uint256 nodeFeeAmount = getNodeFee(nodeAddress);
+        require(nodeFeeAmount + PROTOCOL_FEE == msg.value, "Invalid fee deposition");
+        nodeFees[nodeAddress] += nodeFeeAmount;
         protocolFees += PROTOCOL_FEE;
-        emit FeeCollected(msg.sender, nodeAddress, targetContract, targetOwner, NODE_FEE, PROTOCOL_FEE);
+        emit FeeCollected(msg.sender, nodeAddress, targetContract, targetOwner, nodeFeeAmount, PROTOCOL_FEE);
     }
 
     function withdraw(address recipient, uint256 value) external {
@@ -64,12 +84,6 @@ contract Vault {
         nodeFees[msg.sender] = 0;
         (bool sent, ) = msg.sender.call{value: amount, gas: 2300}("");
         require(sent, "Failed to send Ether");
-    }
-
-    /// @notice Allows the owner to update the node fee
-    function updateNodeFee(uint256 _nodeFee) external {
-        require(msg.sender == owner, "Only owner can update node fee");
-        NODE_FEE = _nodeFee;
     }
 
     /// @notice Allows the owner to update the protocol fee
