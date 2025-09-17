@@ -23,6 +23,8 @@ contract Vault {
         if (_owner == address(0))
         {
             owner = msg.sender;
+        } else {
+            owner = _owner;
         }
         if (_nodeFee > 0) {
             NODE_FEE = _nodeFee;
@@ -30,7 +32,6 @@ contract Vault {
         if (_protocolFee > 0) {
             PROTOCOL_FEE = _protocolFee;
         }
-        owner = _owner;
     }
 
     function depositFees(
@@ -55,6 +56,14 @@ contract Vault {
         require(msg.sender == owner, "Only owner can change owner");
         require(newOwner != address(0), "New owner cannot be zero address");
         owner = newOwner;
+    }
+
+    function withdrawNodeFee() external {
+        uint256 amount = nodeFees[msg.sender];
+        require(amount > 0, "No fees to withdraw");
+        nodeFees[msg.sender] = 0;
+        (bool sent, ) = msg.sender.call{value: amount, gas: 2300}("");
+        require(sent, "Failed to send Ether");
     }
 
     receive() external payable {
