@@ -12,7 +12,9 @@ interface WalletInfoCardProps {
   isLoading: boolean;
   isSwitching: boolean;
   isRefreshing: boolean;
+  isSwitchingToSepolia: boolean;
   onRefresh: () => Promise<void>;
+  onSwitchToSepolia: () => Promise<void>;
 }
 
 export const WalletInfoCard = memo(({
@@ -23,7 +25,9 @@ export const WalletInfoCard = memo(({
   isLoading,
   isSwitching,
   isRefreshing,
+  isSwitchingToSepolia,
   onRefresh,
+  onSwitchToSepolia,
 }: WalletInfoCardProps) => {
   const [copied, setCopied] = React.useState(false);
 
@@ -97,13 +101,23 @@ export const WalletInfoCard = memo(({
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
             <span className="text-sm text-muted-foreground">Network</span>
             <div className="flex items-center space-x-2">
-              {isSwitching ? (
+              {(isSwitching || isSwitchingToSepolia) ? (
                 <>
                   <Loader2 className="h-3 w-3 animate-spin" />
                   <span className="text-sm">Switching...</span>
                 </>
               ) : (
-                <span className="text-sm font-medium">{chainName}</span>
+                <>
+                  <span className="text-sm font-medium">{chainName}</span>
+                  <Button
+                    onClick={onSwitchToSepolia}
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                  >
+                    Switch to Sepolia
+                  </Button>
+                </>
               )}
             </div>
           </div>

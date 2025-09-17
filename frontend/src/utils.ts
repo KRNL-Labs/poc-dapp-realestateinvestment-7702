@@ -109,7 +109,14 @@ export const getRequiredChainId = (): number => {
   return DEFAULT_CHAIN_ID;
 };
 
-export const switchNetwork = async (wallet: any, targetChainId: number): Promise<boolean> => {
+interface PrivyWallet {
+  switchChain: (chainId: number) => Promise<void>;
+  address: string;
+  chainId: string;
+  connectorType: string;
+}
+
+export const switchNetwork = async (wallet: PrivyWallet, targetChainId: number): Promise<boolean> => {
   try {
     await wallet.switchChain(targetChainId);
     return true;

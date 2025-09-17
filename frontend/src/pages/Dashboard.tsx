@@ -1,6 +1,5 @@
 import { usePrivy } from '@privy-io/react-auth';
-import { useNavigate } from 'react-router-dom';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, Loader2, Play } from 'lucide-react';
@@ -9,11 +8,10 @@ import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
 import { useTestScenario } from '@/hooks/useTestScenario';
 import { WalletInfoCard } from '@/components/WalletInfoCard';
 import { SmartAccountAuthCard } from '@/components/SmartAccountAuthCard';
-import { formatAddress, getChainName } from '@/utils';
+import { formatAddress, getChainName, switchNetwork } from '@/utils';
 
 const Dashboard = () => {
-  const { ready, authenticated, logout } = usePrivy();
-  const navigate = useNavigate();
+  const { logout } = usePrivy();
   const {
     balance,
     isLoading: balanceLoading,
@@ -46,6 +44,7 @@ const Dashboard = () => {
   } = useTestScenario();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSwitchingToSepolia, setIsSwitchingToSepolia] = useState(false);
 
   const chainName = useMemo(
     () => getChainName(chainInfo?.providerChainIdDecimal),
@@ -53,16 +52,9 @@ const Dashboard = () => {
   );
 
 
-  useEffect(() => {
-    if (ready && !authenticated) {
-      navigate('/');
-    }
-  }, [ready, authenticated, navigate]);
-
   const handleLogout = useCallback(async () => {
     await logout();
-    navigate('/');
-  }, [logout, navigate]);
+  }, [logout]);
 
   const refreshBalance = useCallback(async () => {
     setIsRefreshing(true);
@@ -70,14 +62,21 @@ const Dashboard = () => {
     setIsRefreshing(false);
   }, [refetch]);
 
+  const switchToSepolia = useCallback(async () => {
+    if (!embeddedWallet) return;
 
-  if (!ready || !authenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
+    setIsSwitchingToSepolia(true);
+    try {
+      await switchNetwork(embeddedWallet, 11155111); // Sepolia Chain ID
+      await refetch(); // Refresh balance after network switch
+    } catch (error) {
+      console.error('Failed to switch to Sepolia:', error);
+    } finally {
+      setIsSwitchingToSepolia(false);
+    }
+  }, [embeddedWallet, refetch]);
+
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,7 +114,9 @@ const Dashboard = () => {
               isLoading={balanceLoading}
               isSwitching={isSwitching}
               isRefreshing={isRefreshing}
+              isSwitchingToSepolia={isSwitchingToSepolia}
               onRefresh={refreshBalance}
+              onSwitchToSepolia={switchToSepolia}
             />
             <SmartAccountAuthCard
               isAuthorized={isAuthorized}

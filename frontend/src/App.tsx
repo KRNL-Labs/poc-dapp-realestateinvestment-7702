@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PrivyProvider from './providers/PrivyProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
+import { usePrivy } from '@privy-io/react-auth';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('./pages/Login'));
@@ -15,6 +16,17 @@ const PageLoader = () => (
   </div>
 );
 
+// Main component that handles auth state
+const MainApp = () => {
+  const { ready, authenticated } = usePrivy();
+
+  if (!ready) {
+    return <PageLoader />;
+  }
+
+  return authenticated ? <Dashboard /> : <Login />;
+};
+
 function App() {
   return (
     <ErrorBoundary>
@@ -22,8 +34,7 @@ function App() {
         <Router>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<Login />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/" element={<MainApp />} />
             </Routes>
           </Suspense>
         </Router>
