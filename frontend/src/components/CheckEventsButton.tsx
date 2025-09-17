@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ethers } from 'ethers';
 import { Search, Loader2 } from 'lucide-react';
+import { logger } from '@/utils/logger';
+import { CONTRACT_ADDRESSES, BLOCK_LOOKBACK, DEFAULT_CHAIN } from '@/utils/constants';
 
-const REAL_ESTATE_INVESTMENT_ADDRESS = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
+const REAL_ESTATE_INVESTMENT_ADDRESS = CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT;
 
 // ABI for the events we want to listen to
 const REAL_ESTATE_ABI = [
@@ -26,18 +28,18 @@ export function CheckEventsButton({ onEventsFound, onError }: CheckEventsButtonP
     setEvents([]);
 
     try {
-      // Connect to Sepolia using public RPC
-      const provider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+      // Connect to default chain using public RPC
+      const provider = new ethers.JsonRpcProvider(DEFAULT_CHAIN.rpcUrl);
 
       // Create contract interface
       const contract = new ethers.Contract(REAL_ESTATE_INVESTMENT_ADDRESS, REAL_ESTATE_ABI, provider);
 
       // Get current block number
       const currentBlock = await provider.getBlockNumber();
-      const fromBlock = Math.max(0, currentBlock - 10000); // Look back 10000 blocks
+      const fromBlock = Math.max(0, currentBlock - BLOCK_LOOKBACK);
 
-      console.log(`Checking events from block ${fromBlock} to ${currentBlock}`);
-      console.log(`Contract address: ${REAL_ESTATE_INVESTMENT_ADDRESS}`);
+      logger.log(`Checking events from block ${fromBlock} to ${currentBlock}`);
+      logger.log(`Contract address: ${REAL_ESTATE_INVESTMENT_ADDRESS}`);
 
       // Fetch all events
       const allEvents: any[] = [];
@@ -48,25 +50,28 @@ export function CheckEventsButton({ onEventsFound, onError }: CheckEventsButtonP
         const propertyAnalyzedEvents = await contract.queryFilter(propertyAnalyzedFilter, fromBlock, currentBlock);
 
         for (const event of propertyAnalyzedEvents) {
-          const decoded = {
-            type: 'PropertyAnalyzed',
-            blockNumber: event.blockNumber,
-            transactionHash: event.transactionHash,
-            caller: event.args?.[0],
-            nonce: event.args?.[1]?.toString(),
-            id: event.args?.[2],
-            propertyAddress: event.args?.[3],
-            totalValue: event.args?.[4]?.toString(),
-            investmentGrade: event.args?.[5],
-            expectedYield: event.args?.[6]?.toString(),
-            confidence: event.args?.[7]?.toString(),
-            recommendation: event.args?.[8]
-          };
-          allEvents.push(decoded);
-          console.log('PropertyAnalyzed Event:', decoded);
+          // Type guard to ensure we have EventLog with args
+          if ('args' in event && event.args) {
+            const decoded = {
+              type: 'PropertyAnalyzed',
+              blockNumber: event.blockNumber,
+              transactionHash: event.transactionHash,
+              caller: event.args[0],
+              nonce: event.args[1]?.toString(),
+              id: event.args[2],
+              propertyAddress: event.args[3],
+              totalValue: event.args[4]?.toString(),
+              investmentGrade: event.args[5],
+              expectedYield: event.args[6]?.toString(),
+              confidence: event.args[7]?.toString(),
+              recommendation: event.args[8]
+            };
+            allEvents.push(decoded);
+            logger.debug('PropertyAnalyzed Event:', decoded);
+          }
         }
       } catch (err) {
-        console.log('No PropertyAnalyzed events found or error:', err);
+        logger.debug('No PropertyAnalyzed events found or error:', err);
       }
 
       // Get TokensPurchased events
@@ -75,24 +80,27 @@ export function CheckEventsButton({ onEventsFound, onError }: CheckEventsButtonP
         const tokensPurchasedEvents = await contract.queryFilter(tokensPurchasedFilter, fromBlock, currentBlock);
 
         for (const event of tokensPurchasedEvents) {
-          const decoded = {
-            type: 'TokensPurchased',
-            blockNumber: event.blockNumber,
-            transactionHash: event.transactionHash,
-            caller: event.args?.[0],
-            nonce: event.args?.[1]?.toString(),
-            id: event.args?.[2],
-            investor: event.args?.[3],
-            tokenAmount: event.args?.[4]?.toString(),
-            usdcAmount: event.args?.[5]?.toString(),
-            ownershipPercentage: event.args?.[6]?.toString(),
-            timestamp: event.args?.[7]?.toString()
-          };
-          allEvents.push(decoded);
-          console.log('TokensPurchased Event:', decoded);
+          // Type guard to ensure we have EventLog with args
+          if ('args' in event && event.args) {
+            const decoded = {
+              type: 'TokensPurchased',
+              blockNumber: event.blockNumber,
+              transactionHash: event.transactionHash,
+              caller: event.args[0],
+              nonce: event.args[1]?.toString(),
+              id: event.args[2],
+              investor: event.args[3],
+              tokenAmount: event.args[4]?.toString(),
+              usdcAmount: event.args[5]?.toString(),
+              ownershipPercentage: event.args[6]?.toString(),
+              timestamp: event.args[7]?.toString()
+            };
+            allEvents.push(decoded);
+            logger.debug('TokensPurchased Event:', decoded);
+          }
         }
       } catch (err) {
-        console.log('No TokensPurchased events found or error:', err);
+        logger.debug('No TokensPurchased events found or error:', err);
       }
 
       // Get InvestmentOpened events
@@ -101,40 +109,43 @@ export function CheckEventsButton({ onEventsFound, onError }: CheckEventsButtonP
         const investmentOpenedEvents = await contract.queryFilter(investmentOpenedFilter, fromBlock, currentBlock);
 
         for (const event of investmentOpenedEvents) {
-          const decoded = {
-            type: 'InvestmentOpened',
-            blockNumber: event.blockNumber,
-            transactionHash: event.transactionHash,
-            caller: event.args?.[0],
-            nonce: event.args?.[1]?.toString(),
-            id: event.args?.[2],
-            propertyAddress: event.args?.[3],
-            totalValue: event.args?.[4]?.toString(),
-            totalTokenSupply: event.args?.[5]?.toString(),
-            pricePerToken: event.args?.[6]?.toString()
-          };
-          allEvents.push(decoded);
-          console.log('InvestmentOpened Event:', decoded);
+          // Type guard to ensure we have EventLog with args
+          if ('args' in event && event.args) {
+            const decoded = {
+              type: 'InvestmentOpened',
+              blockNumber: event.blockNumber,
+              transactionHash: event.transactionHash,
+              caller: event.args[0],
+              nonce: event.args[1]?.toString(),
+              id: event.args[2],
+              propertyAddress: event.args[3],
+              totalValue: event.args[4]?.toString(),
+              totalTokenSupply: event.args[5]?.toString(),
+              pricePerToken: event.args[6]?.toString()
+            };
+            allEvents.push(decoded);
+            logger.debug('InvestmentOpened Event:', decoded);
+          }
         }
       } catch (err) {
-        console.log('No InvestmentOpened events found or error:', err);
+        logger.debug('No InvestmentOpened events found or error:', err);
       }
 
       // Sort events by block number
       allEvents.sort((a, b) => (a.blockNumber || 0) - (b.blockNumber || 0));
 
-      console.log(`Total events found: ${allEvents.length}`);
-      console.log('All events:', allEvents);
+      logger.log(`Total events found: ${allEvents.length}`);
+      logger.debug('All events:', allEvents);
 
       setEvents(allEvents);
       onEventsFound?.(allEvents);
 
       if (allEvents.length === 0) {
-        console.log('No events found. The contract might be newly deployed or no transactions have been made yet.');
+        logger.log('No events found. The contract might be newly deployed or no transactions have been made yet.');
       }
 
     } catch (error) {
-      console.error('Error checking events:', error);
+      logger.error('Error checking events:', error);
       onError?.(error as Error);
     } finally {
       setIsLoading(false);

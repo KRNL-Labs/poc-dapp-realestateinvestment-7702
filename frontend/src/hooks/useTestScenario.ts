@@ -6,8 +6,10 @@ import {
   createTransactionIntent
 } from '../utils/transactionIntent';
 import DelegatedAccountABI from '../contracts/Delegated7702Account.abi.json';
+import { logger } from '../utils/logger';
+import { CONTRACT_ADDRESSES } from '../utils/constants';
 
-const REAL_ESTATE_INVESTMENT_ADDRESS = import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS;
+const REAL_ESTATE_INVESTMENT_ADDRESS = CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT;
 
 export const useTestScenario = () => {
   const { wallets } = useWallets();
@@ -51,9 +53,9 @@ export const useTestScenario = () => {
       });
 
       const [currentNonce] = contractInterface.decodeFunctionResult('getCurrentNonce', nonceResult);
-      console.log(currentNonce)
+      logger.debug('Current nonce result:', currentNonce);
       const nonce = Number(currentNonce);
-      console.log('Using current contract nonce:', nonce);
+      logger.debug('Using current contract nonce:', nonce);
 
       const destinations = [REAL_ESTATE_INVESTMENT_ADDRESS];
       const values = [BigInt(0)]; // No ETH value for this transaction
@@ -65,7 +67,7 @@ export const useTestScenario = () => {
         nonce
       );
 
-      console.log('Created TransactionIntent:', transactionIntent);
+      logger.debug('Created TransactionIntent:', transactionIntent);
 
       // Step 2: Create hash for signing
       const intentHash = keccak256(
@@ -81,11 +83,11 @@ export const useTestScenario = () => {
         )
       );
 
-      console.log('Intent hash to sign:', intentHash);
+      logger.debug('Intent hash to sign:', intentHash);
 
       // Step 3: Request signature from user using Privy embedded wallet
 
-      console.log('Requesting signature from user for workflow execution...');
+      logger.log('Requesting signature from user for workflow execution...');
 
       let signature: `0x${string}`;
       try {
@@ -95,14 +97,14 @@ export const useTestScenario = () => {
           params: [intentHash, embeddedWallet.address]
         }) as `0x${string}`;
 
-        console.log('User signature obtained:', signature);
+        logger.log('User signature obtained:', signature);
       } catch (signError: any) {
-        console.error('Signature request failed:', signError);
+        logger.error('Signature request failed:', signError);
         throw new Error(`Failed to get signature: ${signError.message || signError}`);
       }
 
       // Step 4: Validate signature on contract before proceeding
-      console.log('Validating signature on contract...');
+      logger.log('Validating signature on contract...');
 
       try {
         // Validate the signature using ABI
@@ -135,23 +137,23 @@ export const useTestScenario = () => {
         // Decode the result
         const [isValid, signer] = iface.decodeFunctionResult('validateIntentSignature', result);
 
-        console.log('Signature validation result:', {
+        logger.debug('Signature validation result:', {
           isValid,
           signer,
           expectedSigner: embeddedWallet.address
         });
 
         if (!isValid) {
-          console.error('Signature validation failed!');
-          console.error(`Recovered signer: ${signer}`);
-          console.error(`Expected signer: ${embeddedWallet.address}`);
+          logger.error('Signature validation failed!');
+          logger.error(`Recovered signer: ${signer}`);
+          logger.error(`Expected signer: ${embeddedWallet.address}`);
           setError('Signature validation failed. The signature does not match the wallet address.');
           return; // Exit early if validation fails
         }
 
-        console.log('✅ Signature validation passed!');
+        logger.log('✅ Signature validation passed!');
       } catch (validationError: any) {
-        console.error('Error validating signature:', validationError);
+        logger.error('Error validating signature:', validationError);
         setError(`Signature validation error: ${validationError.message || validationError}`);
         return; // Exit early if validation fails
       }
@@ -271,7 +273,7 @@ export const useTestScenario = () => {
       //   body: JSON.stringify(payload)
       // });
 
-      console.log('Processed workflow with signature:', JSON.stringify(processedWorkflow));
+      logger.debug('Processed workflow with signature:', JSON.stringify(processedWorkflow));
 
       const payload = {
         id: 1,
@@ -295,10 +297,10 @@ export const useTestScenario = () => {
 
       const data = await response.json();
       setResult(data);
-      console.log('Workflow execution result:', data);
+      logger.log('Workflow execution result:', data);
       
     } catch (error) {
-      console.error('Error executing workflow:', error);
+      logger.error('Error executing workflow:', error);
       setError(error instanceof Error ? error.message : 'Failed to execute workflow');
     } finally {
       setIsExecuting(false);
