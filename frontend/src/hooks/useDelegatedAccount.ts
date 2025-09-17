@@ -56,6 +56,8 @@ export const useDelegatedAccount = () => {
     }
   }, [user?.wallet?.address]);
 
+  
+
   const initializeAccount = useCallback(async () => {
     console.log('Initializing delegated account...');
     console.log('User wallet address:', user?.wallet?.address);
@@ -119,11 +121,37 @@ export const useDelegatedAccount = () => {
     }
   }, [user?.wallet?.address, sendTransaction]);
 
+  // Approve max uint256 for a contract address on ERC20
+  const approveERC20Max = useCallback(async (spenderAddress: string) => {
+    if (!user?.wallet?.address) {
+      setError('No wallet connected');
+      return;
+    }
+    setError(null);
+    try {
+      const ERC20_ABI = [
+        "function approve(address spender, uint256 amount) public returns (bool)"
+      ];
+      const MAX_UINT256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+      const iface = new ethers.Interface(ERC20_ABI);
+      const data = iface.encodeFunctionData('approve', [spenderAddress, MAX_UINT256]);
+      const txResult = await sendTransaction({
+        to: "0x3c0EeEA6d275Ea878808f16b835cacE0b3a7c6A9",
+        data,
+      });
+      return txResult;
+    } catch (error) {
+      console.error('Error approving ERC20:', error);
+      setError(error instanceof Error ? error.message : 'Failed to approve ERC20');
+    }
+  }, [user?.wallet?.address, sendTransaction]);
+
   return {
     initializeAccount,
     checkInitialized,
     isInitializing,
     isInitialized,
     error,
+    approveERC20Max,
   };
 };

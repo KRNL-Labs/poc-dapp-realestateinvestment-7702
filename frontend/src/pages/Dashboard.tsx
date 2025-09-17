@@ -32,6 +32,7 @@ const Dashboard = () => {
     isInitializing,
     isInitialized,
     error: delegatedError,
+    approveERC20Max,
   } = useDelegatedAccount();
 
   const {
@@ -45,6 +46,8 @@ const Dashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showWorkflowInput, setShowWorkflowInput] = useState(false);
   const [workflowInput, setWorkflowInput] = useState('');
+  const [erc20ApproveAddress, setErc20ApproveAddress] = useState("");
+  const [erc20ApproveLoading, setErc20ApproveLoading] = useState(false);
 
   // Debug logging
   useEffect(() => {
@@ -309,7 +312,7 @@ const Dashboard = () => {
                           'Not configured'
                         }
                       </span>
-                      {smartContractAddress && smartContractAddress !== '0x0000000000000000000000000000000000000000' && smartContractAddress !== '0x' && (
+                      {smartContractAddress && smartContractAddress !== '0x0000000000000000000000000000000000000000' && smartContractAddress !== '0' && (
                         <Button
                           onClick={() => {
                             navigator.clipboard.writeText(smartContractAddress);
@@ -519,6 +522,40 @@ const Dashboard = () => {
                       </pre>
                     </details>
                   </div>
+                )}
+              </div>
+
+              {/* ERC20 Approve UI */}
+              <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                <h3 className="text-lg font-medium">ERC20 Approve</h3>
+                <label className="block text-sm font-medium mb-1">Contract Address to Approve</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded text-sm font-mono"
+                  placeholder="0x..."
+                  value={erc20ApproveAddress}
+                  onChange={e => setErc20ApproveAddress(e.target.value)}
+                />
+                <Button
+                  onClick={async () => {
+                    setErc20ApproveLoading(true);
+                    await approveERC20Max(erc20ApproveAddress);
+                    setErc20ApproveLoading(false);
+                  }}
+                  disabled={!erc20ApproveAddress || erc20ApproveLoading}
+                  className="flex items-center justify-center"
+                >
+                  {erc20ApproveLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>Process</>
+                  )}
+                </Button>
+                {delegatedError && (
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">Error: {delegatedError}</div>
                 )}
               </div>
 
