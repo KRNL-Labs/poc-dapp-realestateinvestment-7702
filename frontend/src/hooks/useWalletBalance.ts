@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { getRequiredChainId, switchNetwork } from '../utils/chains';
+import { getRequiredChainId, switchNetwork } from '../utils';
 
 export const useWalletBalance = () => {
   const [balance, setBalance] = useState('0');

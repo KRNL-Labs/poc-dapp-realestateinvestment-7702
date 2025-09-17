@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallets, useSign7702Authorization } from '@privy-io/react-auth';
-import { getRequiredChainId } from '../utils/chains';
-import { initializeWasm } from '../utils/transactionSerializer';
+import { getRequiredChainId, initializeWasm } from '../utils';
 
 export const useSmartAccountAuth = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -167,7 +166,8 @@ export const useSmartAccountAuth = () => {
               }
             }
           } catch (err) {
-            
+            // Continue waiting for receipt
+            console.debug('Receipt not ready yet:', err);
           }
           
           await new Promise(resolve => setTimeout(resolve, 5000));

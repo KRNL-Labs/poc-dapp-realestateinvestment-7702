@@ -24,7 +24,7 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
 
     // State
     address public delegate;
-    address public immutable VaultAddress;
+    address public constant VaultAddress = 0x5b3d977acBB96C66D3AE050dDF34A68bfd5027b5;
 
     // Events
     event DelegateUsed(address indexed delegate, bytes32 userOpHash);
@@ -39,10 +39,7 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
     error OnlyOwnerFunction();
     error InvalidNonce();
 
-    constructor(IEntryPoint _entryPoint, address _vaultAddress) Simple7702AccountV07(_entryPoint) {
-        require(_vaultAddress != address(0), "Invalid vault");
-        VaultAddress = _vaultAddress;
-    }
+    constructor(IEntryPoint _entryPoint) Simple7702AccountV07(_entryPoint) {}
 
     /// @notice Execute transaction with intent signature
     function execute(

@@ -1,4 +1,5 @@
-// Chain configurations
+// ==================== CHAIN CONFIGURATIONS ====================
+
 export const CHAIN_CONFIG = {
   SEPOLIA: {
     id: 11155111,
@@ -44,20 +45,21 @@ export const CHAIN_CONFIG = {
   },
 } as const;
 
-// Get default chain from environment or fallback to Sepolia
+// ==================== ENVIRONMENT CONSTANTS ====================
+
 export const DEFAULT_CHAIN_ID = parseInt(import.meta.env.VITE_CHAIN_ID || '11155111');
 export const DEFAULT_CHAIN = Object.values(CHAIN_CONFIG).find(
   chain => chain.id === DEFAULT_CHAIN_ID
 ) || CHAIN_CONFIG.SEPOLIA;
 
-// Contract addresses from environment
+export const RPC_URL = import.meta.env.VITE_RPC_URL || DEFAULT_CHAIN.rpcUrl;
+
 export const CONTRACT_ADDRESSES = {
   DELEGATED_ACCOUNT: import.meta.env.VITE_DELEGATED_ACCOUNT_ADDRESS,
   MOCK_USDC: import.meta.env.VITE_MOCK_USDC_ADDRESS,
   REAL_ESTATE_INVESTMENT: import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS,
 } as const;
 
-// Fee configuration from environment
 export const FEE_CONFIG = {
   MIN_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MIN_EXCHANGE_RATE || '3000000000'),
   MAX_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MAX_EXCHANGE_RATE || '4000000000'),
@@ -65,10 +67,10 @@ export const FEE_CONFIG = {
   MAX_FEE: BigInt(import.meta.env.VITE_MAX_FEE || '5000000'),
 } as const;
 
-// Delegate owner from environment
 export const DELEGATE_OWNER = import.meta.env.VITE_DELEGATE_OWNER;
 
-// UI Constants
+// ==================== UI CONSTANTS ====================
+
 export const ANIMATION_DURATION = {
   FAST: 150,
   NORMAL: 300,
@@ -81,7 +83,8 @@ export const TOAST_DURATION = {
   LONG: 5000,
 } as const;
 
-// Blockchain constants
-export const BLOCK_LOOKBACK = 10000; // Number of blocks to look back for events
-export const TX_CONFIRMATION_BLOCKS = 1; // Number of blocks to wait for tx confirmation
-export const TX_POLLING_INTERVAL = 5000; // Milliseconds between tx status checks
+// ==================== BLOCKCHAIN CONSTANTS ====================
+
+export const BLOCK_LOOKBACK = 10000;
+export const TX_CONFIRMATION_BLOCKS = 1;
+export const TX_POLLING_INTERVAL = 5000;

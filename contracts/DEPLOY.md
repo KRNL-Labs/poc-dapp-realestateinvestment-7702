@@ -28,10 +28,10 @@ Note the deployed Vault address from the output.
 
 **Step 2: Deploy Delegated7702AccountV2**
 ```bash
-VAULT_ADDRESS=0x... forge script script/DeployDelegatedAccountV2.s.sol:DeployDelegatedAccountV2Script --rpc-url $RPC_URL --broadcast
+forge script script/DeployDelegatedAccountV2.s.sol:DeployDelegatedAccountV2Script --rpc-url $RPC_URL --broadcast
 ```
 
-Use the Vault address from Step 1.
+Note: The vault address is now hardcoded as a constant in the contract.
 
 ## Verification
 
@@ -46,7 +46,7 @@ forge verify-contract <VAULT_ADDRESS> src/Vault.sol:Vault \
 
 # Verify Delegated7702AccountV2
 forge verify-contract <ACCOUNT_ADDRESS> src/Delegated7702AccountV2.sol:Delegated7702AccountV2 \
-  --constructor-args $(cast abi-encode "constructor(address,address)" $ENTRY_POINT_ADDRESS $VAULT_ADDRESS) \
+  --constructor-args $(cast abi-encode "constructor(address)" $ENTRY_POINT_ADDRESS) \
   --etherscan-api-key $ETHERSCAN_API_KEY \
   --chain sepolia
 ```

@@ -1,4 +1,4 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,12 @@ import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
 import { useDelegatedAccount } from '@/hooks/useDelegatedAccount';
 import { useTestScenario } from '@/hooks/useTestScenario';
-import { CheckEventsButton } from '@/components/CheckEventsButton';
 import { WalletInfoCard } from '@/components/WalletInfoCard';
 import { SmartAccountAuthCard } from '@/components/SmartAccountAuthCard';
-import { formatAddress, getChainName } from '@/utils/formatters';
-import { logger } from '@/utils/logger';
-import { DELEGATE_OWNER } from '@/utils/constants';
+import { formatAddress, getChainName } from '@/utils';
+import { DELEGATE_OWNER, RPC_URL } from '@/const';
 import { ethers } from 'ethers';
+import DelegatedAccountABI from '@/contracts/Delegated7702AccountV2.abi.json';
 
 const Dashboard = () => {
   const { ready, authenticated, logout } = usePrivy();
@@ -42,45 +41,41 @@ const Dashboard = () => {
 
   const {
     backupPrivateKey,
-    checkInitialized,
-    checkContractsWhitelisted,
+    checkDelegation,
     isExportingKey,
+    isDelegatedToOwner,
     error: delegatedError,
   } = useDelegatedAccount();
 
   const {
     executeWorkflow,
-    isExecuting,
-    result: workflowResult,
+    isSubmitting,
+    isWaitingForExecution,
+    submissionResult,
+    executionResult,
     error: workflowError,
   } = useTestScenario();
 
   const [isDelegating, setIsDelegating] = useState(false);
-  const [isDelegated, setIsDelegated] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Memoized chain name calculation
   const chainName = useMemo(
     () => getChainName(chainInfo?.providerChainIdDecimal),
     [chainInfo?.providerChainIdDecimal]
   );
 
-  // Initialize delegated account checks
   useEffect(() => {
     if (embeddedWallet?.address) {
-      checkInitialized();
-      checkContractsWhitelisted();
+      checkDelegation();
     }
-  }, [embeddedWallet?.address, checkInitialized, checkContractsWhitelisted]);
+  }, [embeddedWallet?.address, checkDelegation]);
 
-  // Navigation guard
   useEffect(() => {
     if (ready && !authenticated) {
       navigate('/');
     }
   }, [ready, authenticated, navigate]);
 
-  // Callbacks with useCallback
   const handleLogout = useCallback(async () => {
     await logout();
     navigate('/');
@@ -94,7 +89,6 @@ const Dashboard = () => {
 
   const handleDelegation = useCallback(async () => {
     if (!embeddedWallet) {
-      logger.error('No embedded wallet found');
       return;
     }
 
@@ -103,70 +97,39 @@ const Dashboard = () => {
       const delegateOwnerAddress = DELEGATE_OWNER;
 
       if (!delegateOwnerAddress) {
-        throw new Error('Delegate address (Masterkey) not configured');
+        throw new Error('Delegate address not configured');
       }
 
       const provider = await embeddedWallet.getEthereumProvider();
-
-      // ABI for updateDelegate function
-      const updateDelegateABI = [
-        {
-          name: 'updateDelegate',
-          type: 'function',
-          inputs: [
-            { name: '_newDelegate', type: 'address' }
-          ],
-          outputs: [],
-        }
-      ];
-
-      // Encode the function call
-      const iface = new ethers.Interface(updateDelegateABI);
+      const iface = new ethers.Interface(DelegatedAccountABI);
       const calldata = iface.encodeFunctionData('updateDelegate', [delegateOwnerAddress]);
 
-      // Send transaction from embedded wallet to itself (delegated account)
       const tx = {
         to: embeddedWallet.address,
         data: calldata,
         value: '0x0'
       };
 
-      logger.log('Delegating to Delegate address (Masterkey):', delegateOwnerAddress);
-
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [tx]
       });
 
-      logger.log('Delegation transaction sent:', txHash);
-
-      // Wait for confirmation
-      const publicProvider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+      const publicProvider = new ethers.JsonRpcProvider(RPC_URL);
       const receipt = await publicProvider.waitForTransaction(txHash);
 
       if (receipt?.status === 1) {
-        setIsDelegated(true);
-        logger.log('Delegation successful');
+        await checkDelegation();
       } else {
         throw new Error('Delegation transaction failed');
       }
-    } catch (error) {
-      logger.error('Delegation failed:', error);
-      setIsDelegated(false);
+    } catch {
+      // Ignore delegation errors
     } finally {
       setIsDelegating(false);
     }
-  }, [embeddedWallet]);
+  }, [embeddedWallet, checkDelegation]);
 
-  const handleEventCheck = useCallback((events: any[]) => {
-    logger.log('Events found from Dashboard:', events);
-  }, []);
-
-  const handleEventError = useCallback((error: Error) => {
-    logger.error('Error checking events:', error);
-  }, []);
-
-  // Loading state
   if (!ready || !authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -177,7 +140,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Bar */}
       <nav className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -203,9 +165,7 @@ const Dashboard = () => {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0 space-y-6">
-          {/* Wallet Information Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Wallet Info Card */}
             <WalletInfoCard
               address={embeddedWallet?.address}
               balance={balance}
@@ -216,13 +176,10 @@ const Dashboard = () => {
               isRefreshing={isRefreshing}
               onRefresh={refreshBalance}
               onBackup={async () => {
-                const result = await backupPrivateKey();
-                logger.debug('Backup wallet result:', result);
+                await backupPrivateKey();
               }}
               isExportingKey={isExportingKey}
             />
-
-            {/* Smart Account Auth Card */}
             <SmartAccountAuthCard
               isAuthorized={isAuthorized}
               smartAccountEnabled={smartAccountEnabled}
@@ -233,17 +190,15 @@ const Dashboard = () => {
               error={authError || delegatedError}
               onRefreshStatus={refreshStatus}
               onEnableSmartAccount={async () => {
-                const result = await enableSmartAccount();
-                logger.debug('Smart account enabled:', result);
+                await enableSmartAccount();
               }}
               onDelegate={handleDelegation}
               isDelegating={isDelegating}
-              isDelegated={isDelegated}
+              isDelegated={isDelegatedToOwner}
               embeddedWalletAddress={embeddedWallet?.address}
             />
           </div>
 
-          {/* Investment Dashboard */}
           <Card>
             <CardHeader>
               <CardTitle>Investment Dashboard</CardTitle>
@@ -260,13 +215,18 @@ const Dashboard = () => {
 
                 <Button
                   onClick={executeWorkflow}
-                  disabled={isExecuting}
+                  disabled={isSubmitting || isWaitingForExecution}
                   className="flex items-center justify-center"
                 >
-                  {isExecuting ? (
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Executing Workflow...
+                      Submitting to KRNL Node...
+                    </>
+                  ) : isWaitingForExecution ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Waiting for Execution...
                     </>
                   ) : (
                     <>
@@ -276,10 +236,34 @@ const Dashboard = () => {
                   )}
                 </Button>
 
-                <CheckEventsButton
-                  onEventsFound={handleEventCheck}
-                  onError={handleEventError}
-                />
+                {(isSubmitting || isWaitingForExecution || submissionResult || executionResult) && (
+                  <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded space-y-2">
+                    <div className="font-medium">Process Status:</div>
+                    <div className="space-y-1">
+                      <div className={`flex items-center ${isSubmitting ? 'text-blue-600' : submissionResult ? 'text-green-600' : 'text-gray-400'}`}>
+                        {isSubmitting ? (
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        ) : submissionResult ? (
+                          <span className="mr-2">✓</span>
+                        ) : (
+                          <span className="mr-2">○</span>
+                        )}
+                        Submit to KRNL Node
+                      </div>
+                      <div className={`flex items-center ${isWaitingForExecution ? 'text-blue-600' : executionResult ? 'text-green-600' : 'text-gray-400'}`}>
+                        {isWaitingForExecution ? (
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        ) : executionResult ? (
+                          <span className="mr-2">✓</span>
+                        ) : (
+                          <span className="mr-2">○</span>
+                        )}
+                        Transaction Execution
+                      </div>
+                    </div>
+                  </div>
+                )}
+
 
                 {workflowError && (
                   <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
@@ -287,13 +271,50 @@ const Dashboard = () => {
                   </div>
                 )}
 
-                {workflowResult && (
+                {submissionResult && (
                   <div className="text-sm bg-green-50 p-3 rounded space-y-2">
-                    <div className="font-medium text-green-800">Workflow Executed Successfully!</div>
+                    <div className="font-medium text-green-800">
+                      Workflow Submitted to KRNL Node Successfully!
+                    </div>
+                    <div className="text-green-700">
+                      <span className="font-medium">Workflow ID:</span>
+                      <span className="ml-2">{submissionResult.id}</span>
+                    </div>
                     <details className="text-green-700">
-                      <summary className="cursor-pointer">View Result</summary>
+                      <summary className="cursor-pointer">View Submission Details</summary>
                       <pre className="mt-2 text-xs overflow-auto">
-                        {JSON.stringify(workflowResult, null, 2)}
+                        {JSON.stringify(submissionResult, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                )}
+
+                {executionResult && (
+                  <div className="text-sm bg-green-50 p-3 rounded space-y-2">
+                    <div className="font-medium text-green-800">
+                      Transaction Confirmed On-Chain!
+                    </div>
+                    <div className="text-green-700 space-y-1">
+                      <div>
+                        <span className="font-medium">Transaction Hash:</span>
+                        <a
+                          href={`https://sepolia.etherscan.io/tx/${executionResult.transactionHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 hover:underline"
+                        >
+                          {formatAddress(executionResult.transactionHash)}
+                        </a>
+                      </div>
+                      <div>
+                        <span className="font-medium">Block:</span>
+                        <span className="ml-2">{executionResult.blockNumber}</span>
+                      </div>
+                    </div>
+                    <details className="text-green-700">
+                      <summary className="cursor-pointer">View Transaction Details</summary>
+                      <pre className="mt-2 text-xs overflow-auto">
+                        {JSON.stringify(executionResult, null, 2)}
                       </pre>
                     </details>
                   </div>

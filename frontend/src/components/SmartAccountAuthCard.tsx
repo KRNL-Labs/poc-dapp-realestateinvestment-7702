@@ -2,11 +2,8 @@ import React, { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, RefreshCw, Loader2, CheckCircle, XCircle, Settings, UserCheck, Copy } from 'lucide-react';
-import { formatAddress } from '@/utils/formatters';
-import { copyToClipboard } from '@/utils/clipboard';
-import { getTxExplorerUrl } from '@/utils/formatters';
-import { DEFAULT_CHAIN_ID } from '@/utils/constants';
-import { logger } from '@/utils/logger';
+import { formatAddress, copyToClipboard, getTxExplorerUrl, logger } from '@/utils';
+import { DEFAULT_CHAIN_ID } from '@/const';
 
 interface SmartAccountAuthCardProps {
   isAuthorized: boolean;

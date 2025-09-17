@@ -4,28 +4,37 @@ import { encodePacked, keccak256 } from 'viem';
 import testScenarioData from '../test-scenario.json';
 import DelegatedAccountABI from '../contracts/Delegated7702AccountV2.abi.json';
 import RealEstateInvestmentABI from '../contracts/RealEstateInvestment.abi.json';
-import { logger } from '../utils/logger';
-import { CONTRACT_ADDRESSES } from '../utils/constants';
+import { logger } from '../utils';
+import { CONTRACT_ADDRESSES, RPC_URL } from '../const';
 
 const REAL_ESTATE_INVESTMENT_ADDRESS = CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT;
 
-interface WorkflowResult {
+interface WorkflowSubmissionResult {
   id: number;
   jsonrpc: string;
   result?: unknown;
   error?: unknown;
 }
 
+interface TransactionConfirmationResult {
+  transactionHash: string;
+  blockNumber: number;
+  args: unknown;
+}
+
 export const useTestScenario = () => {
   const { wallets } = useWallets();
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [result, setResult] = useState<WorkflowResult | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isWaitingForExecution, setIsWaitingForExecution] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState<WorkflowSubmissionResult | null>(null);
+  const [executionResult, setExecutionResult] = useState<TransactionConfirmationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const executeWorkflow = async () => {
-    setIsExecuting(true);
+    setIsSubmitting(true);
     setError(null);
-    setResult(null);
+    setSubmissionResult(null);
+    setExecutionResult(null);
 
     try {
       // Get embedded wallet address
@@ -46,7 +55,7 @@ export const useTestScenario = () => {
 
       // Get current nonce from the RealEstateInvestment contract
       const { ethers } = await import('ethers');
-      const publicProvider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+      const publicProvider = new ethers.JsonRpcProvider(RPC_URL);
 
       const targetContract = new ethers.Contract(REAL_ESTATE_INVESTMENT_ADDRESS, RealEstateInvestmentABI, publicProvider);
       const nonce = await targetContract.nonces(embeddedWallet.address);
@@ -115,6 +124,7 @@ export const useTestScenario = () => {
       try {
         // Validate the signature using ABI
         const { ethers: validationEthers } = await import('ethers');
+        const validationProvider = new validationEthers.JsonRpcProvider(RPC_URL);
         const iface = new validationEthers.Interface(DelegatedAccountABI);
 
         // Prepare the intent struct with new structure
@@ -134,12 +144,9 @@ export const useTestScenario = () => {
         ]);
 
         // Call the validation function
-        const result = await provider.request({
-          method: 'eth_call',
-          params: [{
-            to: embeddedWallet.address, // Call on user's delegated account
-            data: calldata
-          }, 'latest']
+        const result = await validationProvider.call({
+          to: embeddedWallet.address, // Call on user's delegated account
+          data: calldata
         });
 
         // Decode the result
@@ -307,21 +314,68 @@ export const useTestScenario = () => {
       }
 
       const data = await response.json();
-      setResult(data);
-      logger.log('Workflow execution result:', data);
-      
+      logger.log('Workflow submission result:', data);
+      setSubmissionResult(data);
+
+      // Step 1 complete - workflow submitted to KRNL node
+      setIsSubmitting(false);
+
+      // Step 2 - Start waiting for execution (transaction confirmation)
+      logger.log('Starting to wait for transaction execution with ID:', transactionIntent.id);
+      setIsWaitingForExecution(true);
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const { ethers: pollEthers } = await import('ethers');
+          const pollProvider = new pollEthers.JsonRpcProvider(RPC_URL);
+          const contract = new pollEthers.Contract(embeddedWallet.address, DelegatedAccountABI, pollProvider);
+
+          // Get events from the last 100 blocks to catch recent events
+          const currentBlock = await pollProvider.getBlockNumber();
+          const fromBlock = Math.max(0, currentBlock - 100);
+
+          const filter = contract.filters.TransactionIntentExecuted();
+          const events = await contract.queryFilter(filter, fromBlock, currentBlock);
+
+          // Look for event with matching ID - use type guard to check for EventLog
+          const matchingEvent = events.find(event => {
+            if ('args' in event && event.args) {
+              return event.args.intentId === transactionIntent.id;
+            }
+            return false;
+          });
+
+          if (matchingEvent && 'args' in matchingEvent) {
+            clearInterval(pollInterval);
+            setIsWaitingForExecution(false);
+            logger.log('✅ Found matching TransactionIntentExecuted event:', matchingEvent);
+
+            // Step 2 complete - transaction confirmed
+            setExecutionResult({
+              transactionHash: matchingEvent.transactionHash,
+              blockNumber: matchingEvent.blockNumber,
+              args: matchingEvent.args
+            });
+          }
+        } catch (eventError) {
+          logger.error('Error polling for events:', eventError);
+        }
+      }, 5000); // Poll every 5 seconds until found
     } catch (error) {
       logger.error('Error executing workflow:', error);
       setError(error instanceof Error ? error.message : 'Failed to execute workflow');
     } finally {
-      setIsExecuting(false);
+      setIsSubmitting(false);
+      setIsWaitingForExecution(false);
     }
   };
 
   return {
     executeWorkflow,
-    isExecuting,
-    result,
+    isSubmitting,
+    isWaitingForExecution,
+    submissionResult,
+    executionResult,
     error,
   };
 };

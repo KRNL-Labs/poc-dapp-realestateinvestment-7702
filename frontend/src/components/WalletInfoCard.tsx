@@ -2,9 +2,7 @@ import React, { memo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wallet, Copy, ExternalLink, RefreshCw, Download, Loader2 } from 'lucide-react';
-import { formatAddress, formatBalance, getChainCurrency, getExplorerUrl } from '@/utils/formatters';
-import { copyToClipboard } from '@/utils/clipboard';
-import { logger } from '@/utils/logger';
+import { formatAddress, formatBalance, getChainCurrency, getExplorerUrl, copyToClipboard, logger } from '@/utils';
 
 interface WalletInfoCardProps {
   address?: string;
