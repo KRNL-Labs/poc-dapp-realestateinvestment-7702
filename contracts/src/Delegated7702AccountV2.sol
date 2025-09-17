@@ -18,18 +18,17 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
         uint256 value;
         bytes32 id;
         address nodeAddress;
+        address delegate;
         uint256 nonce;
         uint256 deadline;
     }
 
     // State
-    address public delegate;
     address public constant VaultAddress = 0x5b3d977acBB96C66D3AE050dDF34A68bfd5027b5;
 
     // Events
     event DelegateUsed(address indexed delegate, bytes32 userOpHash);
     event FeeTransferred(address indexed recipient, uint256 amount);
-    event DelegateUpdated(address indexed oldDelegate, address indexed newDelegate);
     event TransactionIntentExecuted(bytes32 indexed intentId, address indexed executor);
 
     // Errors
@@ -85,30 +84,6 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
         emit TransactionIntentExecuted(intent.id, msg.sender);
     }
 
-    /// @notice Update delegate address
-    function updateDelegate(address _newDelegate) external {
-        if (msg.sender != address(this)) {
-            revert OnlyOwnerFunction();
-        }
-
-        address oldDelegate = delegate;
-        require(_newDelegate != oldDelegate, "Same delegate");
-
-        delegate = _newDelegate;
-        emit DelegateUpdated(oldDelegate, _newDelegate);
-    }
-
-    /// @notice Revoke delegate
-    function revokeDelegate() external {
-        if (msg.sender != address(this)) {
-            revert OnlyOwnerFunction();
-        }
-
-        address oldDelegate = delegate;
-        delegate = address(0);
-        emit DelegateUpdated(oldDelegate, address(0));
-    }
-
     // Internal functions
 
     function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
@@ -119,21 +94,27 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address recoveredSigner = hash.recover(userOp.signature);
 
-        // Check delegate first
-        if (delegate != address(0)) {
-            if (recoveredSigner == delegate) {
-                emit DelegateUsed(delegate, userOpHash);
+        // Decode the calldata to extract the delegate from TransactionIntent
+        if (userOp.callData.length >= 4) {
+            // Decode the execute function parameters
+            (TransactionIntent memory intent, , ) = abi.decode(
+                userOp.callData[4:],
+                (TransactionIntent, bytes, bytes)
+            );
+
+            // Validate against the delegate specified in the intent
+            if (intent.delegate != address(0) && recoveredSigner == intent.delegate) {
+                emit DelegateUsed(intent.delegate, userOpHash);
                 return SIG_VALIDATION_SUCCESS;
             }
-            return SIG_VALIDATION_FAILED;
         }
 
-        // Check owner
+        // Fallback: Check owner
         if (owner != address(0) && recoveredSigner == owner) {
             return SIG_VALIDATION_SUCCESS;
         }
 
-        // Check EOA address
+        // Check EOA address (when owner is not set)
         if (owner == address(0) && recoveredSigner == address(this)) {
             return SIG_VALIDATION_SUCCESS;
         }
@@ -180,6 +161,7 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
                 intent.value,
                 intent.id,
                 intent.nodeAddress,
+                intent.delegate,
                 intent.nonce,
                 intent.deadline
             )

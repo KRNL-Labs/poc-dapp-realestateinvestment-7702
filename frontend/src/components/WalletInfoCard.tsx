@@ -1,7 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet, Copy, ExternalLink, RefreshCw, Download, Loader2 } from 'lucide-react';
+import { Wallet, Copy, ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
 import { formatAddress, formatBalance, getChainCurrency, getExplorerUrl, copyToClipboard, logger } from '@/utils';
 
 interface WalletInfoCardProps {
@@ -13,8 +13,6 @@ interface WalletInfoCardProps {
   isSwitching: boolean;
   isRefreshing: boolean;
   onRefresh: () => Promise<void>;
-  onBackup: () => Promise<void>;
-  isExportingKey: boolean;
 }
 
 export const WalletInfoCard = memo(({
@@ -26,8 +24,6 @@ export const WalletInfoCard = memo(({
   isSwitching,
   isRefreshing,
   onRefresh,
-  onBackup,
-  isExportingKey,
 }: WalletInfoCardProps) => {
   const [copied, setCopied] = React.useState(false);
 
@@ -140,29 +136,10 @@ export const WalletInfoCard = memo(({
               onClick={handleViewExplorer}
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="w-full"
             >
               <ExternalLink className="mr-2 h-3 w-3" />
               View on Explorer
-            </Button>
-            <Button
-              onClick={onBackup}
-              disabled={isExportingKey}
-              variant="outline"
-              size="sm"
-              className="flex-1"
-            >
-              {isExportingKey ? (
-                <>
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-3 w-3" />
-                  Backup Wallet
-                </>
-              )}
             </Button>
           </div>
         )}

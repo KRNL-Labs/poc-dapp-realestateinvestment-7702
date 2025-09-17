@@ -5,7 +5,7 @@ import testScenarioData from '../test-scenario.json';
 import DelegatedAccountABI from '../contracts/Delegated7702AccountV2.abi.json';
 import RealEstateInvestmentABI from '../contracts/RealEstateInvestment.abi.json';
 import { logger } from '../utils';
-import { CONTRACT_ADDRESSES, RPC_URL } from '../const';
+import { CONTRACT_ADDRESSES, RPC_URL, DELEGATE_OWNER } from '../const';
 
 const REAL_ESTATE_INVESTMENT_ADDRESS = CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT;
 
@@ -25,7 +25,7 @@ interface TransactionConfirmationResult {
 export const useTestScenario = () => {
   const { wallets } = useWallets();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isWaitingForExecution, setIsWaitingForExecution] = useState(false);
+  const [isWaitingForTransaction, setIsWaitingForTransaction] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<WorkflowSubmissionResult | null>(null);
   const [executionResult, setExecutionResult] = useState<TransactionConfirmationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +35,7 @@ export const useTestScenario = () => {
     setError(null);
     setSubmissionResult(null);
     setExecutionResult(null);
+    setIsWaitingForTransaction(false);
 
     try {
       // Get embedded wallet address
@@ -76,21 +77,23 @@ export const useTestScenario = () => {
         value: BigInt(0), // No ETH value for this transaction
         id: intentId,
         nodeAddress: nodeAddress as `0x${string}`,
+        delegate: DELEGATE_OWNER as `0x${string}`, // Add delegate field
         nonce: BigInt(nonce),
         deadline: BigInt(deadline)
       };
 
       logger.debug('Created TransactionIntent:', transactionIntent);
 
-      // Step 2: Create hash for signing (matching contract's hash order)
+      // Step 2: Create hash for signing (matching contract's hash order with delegate)
       const intentHash = keccak256(
         encodePacked(
-          ['address', 'uint256', 'bytes32', 'address', 'uint256', 'uint256'],
+          ['address', 'uint256', 'bytes32', 'address', 'address', 'uint256', 'uint256'],
           [
             transactionIntent.target,
             transactionIntent.value,
             transactionIntent.id,
             transactionIntent.nodeAddress,
+            transactionIntent.delegate,
             transactionIntent.nonce,
             transactionIntent.deadline
           ]
@@ -127,12 +130,13 @@ export const useTestScenario = () => {
         const validationProvider = new validationEthers.JsonRpcProvider(RPC_URL);
         const iface = new validationEthers.Interface(DelegatedAccountABI);
 
-        // Prepare the intent struct with new structure
+        // Prepare the intent struct with new structure including delegate
         const intentStruct = {
           target: transactionIntent.target,
           value: transactionIntent.value.toString(),
           id: transactionIntent.id,
           nodeAddress: transactionIntent.nodeAddress,
+          delegate: transactionIntent.delegate,
           nonce: transactionIntent.nonce.toString(),
           deadline: transactionIntent.deadline.toString()
         };
@@ -231,6 +235,7 @@ export const useTestScenario = () => {
               .replace(/\{\{TRANSACTION_INTENT_VALUE\}\}/g, transactionIntent.value.toString())
               .replace(/\{\{TRANSACTION_INTENT_ID\}\}/g, transactionIntent.id)
               .replace(/\{\{TRANSACTION_INTENT_NODE_ADDRESS\}\}/g, transactionIntent.nodeAddress)
+              .replace(/\{\{TRANSACTION_INTENT_DELEGATE\}\}/g, transactionIntent.delegate)
               .replace(/\{\{TRANSACTION_INTENT_NONCE\}\}/g, transactionIntent.nonce.toString())
               .replace(/\{\{TRANSACTION_INTENT_DEADLINE\}\}/g, transactionIntent.deadline.toString());
           }
@@ -322,7 +327,10 @@ export const useTestScenario = () => {
 
       // Step 2 - Start waiting for execution (transaction confirmation)
       logger.log('Starting to wait for transaction execution with ID:', transactionIntent.id);
-      setIsWaitingForExecution(true);
+      setIsWaitingForTransaction(true);
+
+      // Declare timeout variable first so it's accessible in polling function
+      let timeoutId: NodeJS.Timeout;
 
       const pollInterval = setInterval(async () => {
         try {
@@ -347,7 +355,8 @@ export const useTestScenario = () => {
 
           if (matchingEvent && 'args' in matchingEvent) {
             clearInterval(pollInterval);
-            setIsWaitingForExecution(false);
+            clearTimeout(timeoutId);
+            setIsWaitingForTransaction(false);
             logger.log('✅ Found matching TransactionIntentExecuted event:', matchingEvent);
 
             // Step 2 complete - transaction confirmed
@@ -361,19 +370,27 @@ export const useTestScenario = () => {
           logger.error('Error polling for events:', eventError);
         }
       }, 5000); // Poll every 5 seconds until found
+
+      // Set 30-second timeout for transaction execution
+      timeoutId = setTimeout(() => {
+        clearInterval(pollInterval);
+        setIsWaitingForTransaction(false);
+        logger.error('Transaction execution timeout after 30 seconds');
+        setError('Execution failed');
+      }, 30000);
     } catch (error) {
       logger.error('Error executing workflow:', error);
       setError(error instanceof Error ? error.message : 'Failed to execute workflow');
     } finally {
       setIsSubmitting(false);
-      setIsWaitingForExecution(false);
+      setIsWaitingForTransaction(false);
     }
   };
 
   return {
     executeWorkflow,
     isSubmitting,
-    isWaitingForExecution,
+    isWaitingForTransaction,
     submissionResult,
     executionResult,
     error,

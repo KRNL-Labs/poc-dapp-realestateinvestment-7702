@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, RefreshCw, Loader2, CheckCircle, XCircle, Settings, UserCheck, Copy } from 'lucide-react';
+import { Shield, RefreshCw, Loader2, CheckCircle, XCircle, Settings, Copy } from 'lucide-react';
 import { formatAddress, copyToClipboard, getTxExplorerUrl, logger } from '@/utils';
 import { DEFAULT_CHAIN_ID } from '@/const';
 
@@ -15,9 +15,6 @@ interface SmartAccountAuthCardProps {
   error?: string | null;
   onRefreshStatus: () => Promise<void>;
   onEnableSmartAccount: () => Promise<void>;
-  onDelegate: () => Promise<void>;
-  isDelegating: boolean;
-  isDelegated: boolean;
   embeddedWalletAddress?: string;
 }
 
@@ -31,9 +28,6 @@ export const SmartAccountAuthCard = memo(({
   error,
   onRefreshStatus,
   onEnableSmartAccount,
-  onDelegate,
-  isDelegating,
-  isDelegated,
   embeddedWalletAddress,
 }: SmartAccountAuthCardProps) => {
   const isValidSmartContract = smartContractAddress &&
@@ -143,25 +137,6 @@ export const SmartAccountAuthCard = memo(({
                 <>
                   <Settings className="mr-2 h-4 w-4" />
                   {isAuthorized ? 'Already Authorized' : 'Authorize Smart Account'}
-                </>
-              )}
-            </Button>
-
-            <Button
-              onClick={onDelegate}
-              disabled={isDelegating || isDelegated || !isAuthorized}
-              variant={isDelegated ? "outline" : "secondary"}
-              className="w-full flex items-center justify-center"
-            >
-              {isDelegating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Delegating...
-                </>
-              ) : (
-                <>
-                  <UserCheck className="mr-2 h-4 w-4" />
-                  {isDelegated ? 'Already Delegated' : 'Delegate to this Dapp'}
                 </>
               )}
             </Button>

@@ -6,14 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LogOut, Loader2, Play } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
-import { useDelegatedAccount } from '@/hooks/useDelegatedAccount';
 import { useTestScenario } from '@/hooks/useTestScenario';
 import { WalletInfoCard } from '@/components/WalletInfoCard';
 import { SmartAccountAuthCard } from '@/components/SmartAccountAuthCard';
 import { formatAddress, getChainName } from '@/utils';
-import { DELEGATE_OWNER, RPC_URL } from '@/const';
-import { ethers } from 'ethers';
-import DelegatedAccountABI from '@/contracts/Delegated7702AccountV2.abi.json';
 
 const Dashboard = () => {
   const { ready, authenticated, logout } = usePrivy();
@@ -39,24 +35,16 @@ const Dashboard = () => {
     txHash
   } = useSmartAccountAuth();
 
-  const {
-    backupPrivateKey,
-    checkDelegation,
-    isExportingKey,
-    isDelegatedToOwner,
-    error: delegatedError,
-  } = useDelegatedAccount();
 
   const {
     executeWorkflow,
     isSubmitting,
-    isWaitingForExecution,
+    isWaitingForTransaction,
     submissionResult,
     executionResult,
     error: workflowError,
   } = useTestScenario();
 
-  const [isDelegating, setIsDelegating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const chainName = useMemo(
@@ -64,11 +52,6 @@ const Dashboard = () => {
     [chainInfo?.providerChainIdDecimal]
   );
 
-  useEffect(() => {
-    if (embeddedWallet?.address) {
-      checkDelegation();
-    }
-  }, [embeddedWallet?.address, checkDelegation]);
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -87,48 +70,6 @@ const Dashboard = () => {
     setIsRefreshing(false);
   }, [refetch]);
 
-  const handleDelegation = useCallback(async () => {
-    if (!embeddedWallet) {
-      return;
-    }
-
-    setIsDelegating(true);
-    try {
-      const delegateOwnerAddress = DELEGATE_OWNER;
-
-      if (!delegateOwnerAddress) {
-        throw new Error('Delegate address not configured');
-      }
-
-      const provider = await embeddedWallet.getEthereumProvider();
-      const iface = new ethers.Interface(DelegatedAccountABI);
-      const calldata = iface.encodeFunctionData('updateDelegate', [delegateOwnerAddress]);
-
-      const tx = {
-        to: embeddedWallet.address,
-        data: calldata,
-        value: '0x0'
-      };
-
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [tx]
-      });
-
-      const publicProvider = new ethers.JsonRpcProvider(RPC_URL);
-      const receipt = await publicProvider.waitForTransaction(txHash);
-
-      if (receipt?.status === 1) {
-        await checkDelegation();
-      } else {
-        throw new Error('Delegation transaction failed');
-      }
-    } catch {
-      // Ignore delegation errors
-    } finally {
-      setIsDelegating(false);
-    }
-  }, [embeddedWallet, checkDelegation]);
 
   if (!ready || !authenticated) {
     return (
@@ -175,10 +116,6 @@ const Dashboard = () => {
               isSwitching={isSwitching}
               isRefreshing={isRefreshing}
               onRefresh={refreshBalance}
-              onBackup={async () => {
-                await backupPrivateKey();
-              }}
-              isExportingKey={isExportingKey}
             />
             <SmartAccountAuthCard
               isAuthorized={isAuthorized}
@@ -187,14 +124,11 @@ const Dashboard = () => {
               isLoading={authLoading}
               waitingForTx={waitingForTx}
               txHash={txHash}
-              error={authError || delegatedError}
+              error={authError}
               onRefreshStatus={refreshStatus}
               onEnableSmartAccount={async () => {
                 await enableSmartAccount();
               }}
-              onDelegate={handleDelegation}
-              isDelegating={isDelegating}
-              isDelegated={isDelegatedToOwner}
               embeddedWalletAddress={embeddedWallet?.address}
             />
           </div>
@@ -215,7 +149,7 @@ const Dashboard = () => {
 
                 <Button
                   onClick={executeWorkflow}
-                  disabled={isSubmitting || isWaitingForExecution}
+                  disabled={isSubmitting || isWaitingForTransaction}
                   className="flex items-center justify-center"
                 >
                   {isSubmitting ? (
@@ -223,7 +157,7 @@ const Dashboard = () => {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Submitting to KRNL Node...
                     </>
-                  ) : isWaitingForExecution ? (
+                  ) : isWaitingForTransaction ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Waiting for Execution...
@@ -236,7 +170,7 @@ const Dashboard = () => {
                   )}
                 </Button>
 
-                {(isSubmitting || isWaitingForExecution || submissionResult || executionResult) && (
+                {(isSubmitting || isWaitingForTransaction || submissionResult || executionResult) && (
                   <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded space-y-2">
                     <div className="font-medium">Process Status:</div>
                     <div className="space-y-1">
@@ -250,15 +184,15 @@ const Dashboard = () => {
                         )}
                         Submit to KRNL Node
                       </div>
-                      <div className={`flex items-center ${isWaitingForExecution ? 'text-blue-600' : executionResult ? 'text-green-600' : 'text-gray-400'}`}>
-                        {isWaitingForExecution ? (
+                      <div className={`flex items-center ${isWaitingForTransaction ? 'text-blue-600' : executionResult ? 'text-green-600' : 'text-gray-400'}`}>
+                        {isWaitingForTransaction ? (
                           <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                         ) : executionResult ? (
                           <span className="mr-2">✓</span>
                         ) : (
                           <span className="mr-2">○</span>
                         )}
-                        Transaction Execution
+                        {isWaitingForTransaction ? 'Transaction Executing' : 'Transaction Execution'}
                       </div>
                     </div>
                   </div>
