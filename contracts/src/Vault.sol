@@ -66,6 +66,18 @@ contract Vault {
         require(sent, "Failed to send Ether");
     }
 
+    /// @notice Allows the owner to update the node fee
+    function updateNodeFee(uint256 _nodeFee) external {
+        require(msg.sender == owner, "Only owner can update node fee");
+        NODE_FEE = _nodeFee;
+    }
+
+    /// @notice Allows the owner to update the protocol fee
+    function updateProtocolFee(uint256 _protocolFee) external {
+        require(msg.sender == owner, "Only owner can update protocol fee");
+        PROTOCOL_FEE = _protocolFee;
+    }
+
     receive() external payable {
 
     }
