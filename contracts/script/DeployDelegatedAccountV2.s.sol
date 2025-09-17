@@ -8,7 +8,10 @@ contract DeployDelegatedAccountV2Script is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address entryPointAddress = vm.envOr("ENTRY_POINT_ADDRESS", 0x0000000071727De22E5E9d8BAf0edAc6f37da032);
-        address vaultAddress = vm.envOr("VAULT_ADDRESS", vm.addr(deployerPrivateKey));
+
+        // Vault address must be provided via environment variable
+        address vaultAddress = vm.envAddress("VAULT_ADDRESS");
+        require(vaultAddress != address(0), "VAULT_ADDRESS must be set");
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -19,7 +22,8 @@ contract DeployDelegatedAccountV2Script is Script {
 
         vm.stopBroadcast();
 
-        console.log("Delegated7702AccountV2:", address(delegatedAccount));
-        console.log("VaultAddress:", vaultAddress);
+        console.log("Delegated7702AccountV2 deployed at:", address(delegatedAccount));
+        console.log("  EntryPoint:", entryPointAddress);
+        console.log("  VaultAddress:", vaultAddress);
     }
 }

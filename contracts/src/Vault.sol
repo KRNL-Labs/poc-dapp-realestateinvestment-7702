@@ -11,26 +11,25 @@ contract Vault {
 
     address public owner;
 
-    uint256 public protocolFees;
+    uint256 public NODE_FEE;
 
-    uint256 public NODE_FEE = 0.001 ether;
-    uint256 public PROTOCOL_FEE = 0.001 ether;
+    uint256 public PROTOCOL_FEE;
 
     // Mappings for tracking node fees
     mapping(address => uint256) public nodeFees;
 
+    uint256 public protocolFees;
+
     constructor(address _owner, uint256 _nodeFee, uint256 _protocolFee ) {
-        if (_owner == address(0))
-        {
-            owner = msg.sender;
-        }
-        if (_nodeFee > 0) {
-            NODE_FEE = _nodeFee;
-        }
-        if (_protocolFee > 0) {
-            PROTOCOL_FEE = _protocolFee;
-        }
+        require(_owner != address(0), "invalid owner");
+
+        require(_nodeFee > 0, "Invalid node fee");
+
+        require(_protocolFee > 0, "Invalid protocol fee");
+
         owner = _owner;
+        NODE_FEE = _nodeFee;
+        PROTOCOL_FEE = _protocolFee;
     }
 
     function depositFees(
@@ -55,6 +54,26 @@ contract Vault {
         require(msg.sender == owner, "Only owner can change owner");
         require(newOwner != address(0), "New owner cannot be zero address");
         owner = newOwner;
+    }
+
+    function withdrawNodeFee() external {
+        uint256 amount = nodeFees[msg.sender];
+        require(amount > 0, "No fees to withdraw");
+        nodeFees[msg.sender] = 0;
+        (bool sent, ) = msg.sender.call{value: amount, gas: 2300}("");
+        require(sent, "Failed to send Ether");
+    }
+
+    /// @notice Allows the owner to update the node fee
+    function updateNodeFee(uint256 _nodeFee) external {
+        require(msg.sender == owner, "Only owner can update node fee");
+        NODE_FEE = _nodeFee;
+    }
+
+    /// @notice Allows the owner to update the protocol fee
+    function updateProtocolFee(uint256 _protocolFee) external {
+        require(msg.sender == owner, "Only owner can update protocol fee");
+        PROTOCOL_FEE = _protocolFee;
     }
 
     receive() external payable {

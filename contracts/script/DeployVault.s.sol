@@ -7,16 +7,19 @@ import "../src/Vault.sol";
 contract DeployVault is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address vaultAddress = vm.envOr("OWNER", address(0));
-        uint256 nodeFee = vm.envUint("NODE_FEE");
-        uint256 protocolFee = vm.envUint("PROTOCOL_FEE");    
+        address owner = vm.envOr("OWNER", vm.addr(deployerPrivateKey));
+        uint256 nodeFee = 0.000001 ether;
+        uint256 protocolFee = 0.000002 ether;
 
         vm.startBroadcast(deployerPrivateKey);
 
-        Vault vault = new Vault(vaultAddress, nodeFee, protocolFee);
+        Vault vault = new Vault(owner, nodeFee, protocolFee);
 
         vm.stopBroadcast();
 
-        console.log("VaultAddress:", address(vault));
+        console.log("Vault deployed at:", address(vault));
+        console.log("  Owner:", owner);
+        console.log("  Node Fee:", nodeFee / 1e18, "ETH");
+        console.log("  Protocol Fee:", protocolFee / 1e18, "ETH");
     }
 }

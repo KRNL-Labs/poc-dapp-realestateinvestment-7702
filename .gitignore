@@ -29,3 +29,8 @@ dist-ssr
 .env.production
 
 .claude
+
+# Smart contract build artifacts and deployment logs
+contracts/cache/
+contracts/out/
+contracts/broadcast/

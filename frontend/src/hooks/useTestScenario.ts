@@ -2,19 +2,23 @@ import { useState } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import { encodePacked, keccak256 } from 'viem';
 import testScenarioData from '../test-scenario.json';
-import {
-  createTransactionIntent
-} from '../utils/transactionIntent';
-import DelegatedAccountABI from '../contracts/Delegated7702Account.abi.json';
+import DelegatedAccountABI from '../contracts/Delegated7702AccountV2.abi.json';
 import { logger } from '../utils/logger';
 import { CONTRACT_ADDRESSES } from '../utils/constants';
 
 const REAL_ESTATE_INVESTMENT_ADDRESS = CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT;
 
+interface WorkflowResult {
+  id: number;
+  jsonrpc: string;
+  result?: unknown;
+  error?: unknown;
+}
+
 export const useTestScenario = () => {
   const { wallets } = useWallets();
   const [isExecuting, setIsExecuting] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<WorkflowResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const executeWorkflow = async () => {
@@ -33,52 +37,61 @@ export const useTestScenario = () => {
         throw new Error('No embedded wallet found');
       }
 
-      // Step 1: Get current nonce from contract and create TransactionIntent
+      // Step 1: Get current nonce from target contract and create TransactionIntent
       const provider = await embeddedWallet.getEthereumProvider();
 
       // Ensure we're on the right network first
       await embeddedWallet.switchChain(11155111); // Sepolia
 
-      // Get current nonce from the contract using ABI
+      // Get current nonce from the RealEstateInvestment contract
       const { ethers } = await import('ethers');
-      const contractInterface = new ethers.Interface(DelegatedAccountABI);
-      const getNonceCalldata = contractInterface.encodeFunctionData('getCurrentNonce', []);
+      const publicProvider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
 
-      const nonceResult = await provider.request({
-        method: 'eth_call',
-        params: [{
-          to: embeddedWallet.address,
-          data: getNonceCalldata
-        }, 'latest']
-      });
+      // ABI for nonces function from TargetBase
+      const noncesABI = [{
+        "inputs": [{"name": "account", "type": "address"}],
+        "name": "nonces",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "type": "function",
+        "stateMutability": "view"
+      }];
 
-      const [currentNonce] = contractInterface.decodeFunctionResult('getCurrentNonce', nonceResult);
-      logger.debug('Current nonce result:', currentNonce);
-      const nonce = Number(currentNonce);
-      logger.debug('Using current contract nonce:', nonce);
+      const targetContract = new ethers.Contract(REAL_ESTATE_INVESTMENT_ADDRESS, noncesABI, publicProvider);
+      const nonce = await targetContract.nonces(embeddedWallet.address);
+      logger.debug('Current nonce from target contract:', nonce.toString());
 
-      const destinations = [REAL_ESTATE_INVESTMENT_ADDRESS];
-      const values = [BigInt(0)]; // No ETH value for this transaction
+      // Create TransactionIntent with new structure
+      const nodeAddress = '0x0000000000000000000000000000000000000000'; // TODO: Get from environment
+      const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+      const intentId = keccak256(
+        encodePacked(
+          ['address', 'uint256', 'uint256'],
+          [embeddedWallet.address as `0x${string}`, BigInt(nonce), BigInt(deadline)]
+        )
+      ) as `0x${string}`;
 
-      const transactionIntent = createTransactionIntent(
-        destinations,
-        values,
-        embeddedWallet.address,
-        nonce
-      );
+      const transactionIntent = {
+        target: REAL_ESTATE_INVESTMENT_ADDRESS as `0x${string}`,
+        value: BigInt(0), // No ETH value for this transaction
+        id: intentId,
+        nodeAddress: nodeAddress as `0x${string}`,
+        nonce: BigInt(nonce),
+        deadline: BigInt(deadline)
+      };
 
       logger.debug('Created TransactionIntent:', transactionIntent);
 
-      // Step 2: Create hash for signing
+      // Step 2: Create hash for signing (matching contract's hash order)
       const intentHash = keccak256(
         encodePacked(
-          ['address[]', 'uint256[]', 'uint256', 'uint256', 'bytes32'],
+          ['address', 'uint256', 'bytes32', 'address', 'uint256', 'uint256'],
           [
-            transactionIntent.destinations,
-            transactionIntent.values,
+            transactionIntent.target,
+            transactionIntent.value,
+            transactionIntent.id,
+            transactionIntent.nodeAddress,
             transactionIntent.nonce,
-            transactionIntent.deadline,
-            transactionIntent.id
+            transactionIntent.deadline
           ]
         )
       );
@@ -98,9 +111,10 @@ export const useTestScenario = () => {
         }) as `0x${string}`;
 
         logger.log('User signature obtained:', signature);
-      } catch (signError: any) {
-        logger.error('Signature request failed:', signError);
-        throw new Error(`Failed to get signature: ${signError.message || signError}`);
+      } catch (signError) {
+        const errorMessage = signError instanceof Error ? signError.message : String(signError);
+        logger.error('Signature request failed:', errorMessage);
+        throw new Error(`Failed to get signature: ${errorMessage}`);
       }
 
       // Step 4: Validate signature on contract before proceeding
@@ -108,15 +122,17 @@ export const useTestScenario = () => {
 
       try {
         // Validate the signature using ABI
-        const iface = contractInterface;
+        const { ethers: validationEthers } = await import('ethers');
+        const iface = new validationEthers.Interface(DelegatedAccountABI);
 
-        // Prepare the intent struct
+        // Prepare the intent struct with new structure
         const intentStruct = {
-          destinations: transactionIntent.destinations,
-          values: transactionIntent.values.map(v => v.toString()),
+          target: transactionIntent.target,
+          value: transactionIntent.value.toString(),
+          id: transactionIntent.id,
+          nodeAddress: transactionIntent.nodeAddress,
           nonce: transactionIntent.nonce.toString(),
-          deadline: transactionIntent.deadline.toString(),
-          id: transactionIntent.id
+          deadline: transactionIntent.deadline.toString()
         };
 
         // Encode the function call
@@ -152,9 +168,10 @@ export const useTestScenario = () => {
         }
 
         logger.log('✅ Signature validation passed!');
-      } catch (validationError: any) {
-        logger.error('Error validating signature:', validationError);
-        setError(`Signature validation error: ${validationError.message || validationError}`);
+      } catch (validationError) {
+        const errorMessage = validationError instanceof Error ? validationError.message : String(validationError);
+        logger.error('Error validating signature:', errorMessage);
+        setError(`Signature validation error: ${errorMessage}`);
         return; // Exit early if validation fails
       }
 
@@ -162,30 +179,31 @@ export const useTestScenario = () => {
       const workflowData = JSON.parse(JSON.stringify(testScenarioData));
 
       // Flatten the workflowData into a key-value map with dot notation
-      const flattenObject = (obj: any, prefix = ''): Record<string, any> => {
-        const flattened: Record<string, any> = {};
+      const flattenObject = (obj: unknown, prefix = ''): Record<string, unknown> => {
+        const flattened: Record<string, unknown> = {};
 
-        for (const key in obj) {
-          if (obj.hasOwnProperty(key)) {
+        const record = obj as Record<string, unknown>;
+        for (const key in record) {
+          if (Object.prototype.hasOwnProperty.call(record, key)) {
             const newKey = prefix ? `${prefix}.${key}` : key;
 
-            if (obj[key] === null || obj[key] === undefined) {
-              flattened[newKey] = obj[key];
-            } else if (Array.isArray(obj[key])) {
+            if (record[key] === null || record[key] === undefined) {
+              flattened[newKey] = record[key];
+            } else if (Array.isArray(record[key])) {
               // Handle arrays with index notation
-              obj[key].forEach((item: any, index: number) => {
+              (record[key] as unknown[]).forEach((item: unknown, index: number) => {
                 if (typeof item === 'object' && item !== null) {
                   Object.assign(flattened, flattenObject(item, `${newKey}.${index}`));
                 } else {
                   flattened[`${newKey}.${index}`] = item;
                 }
               });
-            } else if (typeof obj[key] === 'object') {
+            } else if (typeof record[key] === 'object') {
               // Recursively flatten nested objects
-              Object.assign(flattened, flattenObject(obj[key], newKey));
+              Object.assign(flattened, flattenObject(record[key], newKey));
             } else {
               // Primitive values
-              flattened[newKey] = obj[key];
+              flattened[newKey] = record[key];
             }
           }
         }
@@ -197,60 +215,55 @@ export const useTestScenario = () => {
 
       // Replace placeholders with actual values in the flattened data
       for (const key in flattenedWorkflowData) {
-        // temp fix
-        flattenedWorkflowData['workflow.steps.5.inputs.value.authData.executions'] = [];
+        if (Object.prototype.hasOwnProperty.call(flattenedWorkflowData, key)) {
+          // temp fix
+          flattenedWorkflowData['workflow.steps.5.inputs.value.authData.executions'] = [];
 
-        if (typeof flattenedWorkflowData[key] === 'string') {
-          const value = flattenedWorkflowData[key];
+          if (typeof flattenedWorkflowData[key] === 'string') {
+            const value = flattenedWorkflowData[key] as string;
 
-          // Check for specific array placeholders and replace with actual arrays
-          if (value === '{{TRANSACTION_INTENT_DESTINATIONS}}') {
-            flattenedWorkflowData[key] = transactionIntent.destinations;
-          } else if (value === '{{TRANSACTION_INTENT_VALUES}}') {
-            flattenedWorkflowData[key] = transactionIntent.values.map(v => v.toString());
-          } else {
-            // For other placeholders, do string replacement
+            // Replace placeholders with actual values
             flattenedWorkflowData[key] = value
               .replace(/\{\{ENV\.SENDER_ADDRESS\}\}/g, embeddedWallet.address)
               .replace(/\{\{ENV\.TARGET_CONTRACT\}\}/g, REAL_ESTATE_INVESTMENT_ADDRESS)
-              .replace(/\{\{TRANSACTION_INTENT_ID\}\}/g, transactionIntent.id)
-              .replace(/\{\{TRANSACTION_INTENT_NONCE\}\}/g, transactionIntent.nonce.toString())
-              .replace(/\{\{TRANSACTION_INTENT_DEADLINE\}\}/g, transactionIntent.deadline.toString())
+              .replace(/\{\{ENV\.NODE_ADDRESS\}\}/g, nodeAddress)
               .replace(/\{\{USER_SIGNATURE\}\}/g, signature);
           }
         }
       }
 
       // Unflatten the flattenedWorkflowData back to nested object
-      const unflattenObject = (flattened: Record<string, any>): any => {
-        const result: any = {};
+      const unflattenObject = (flattened: Record<string, unknown>): unknown => {
+        const result: Record<string, unknown> = {};
 
         for (const key in flattened) {
-          const keys = key.split('.');
-          let current = result;
+          if (Object.prototype.hasOwnProperty.call(flattened, key)) {
+            const keys = key.split('.');
+            let current: Record<string, unknown> = result;
 
-          for (let i = 0; i < keys.length; i++) {
-            const part = keys[i];
-            const isLastKey = i === keys.length - 1;
+            for (let i = 0; i < keys.length; i++) {
+              const part = keys[i];
+              const isLastKey = i === keys.length - 1;
 
-            if (isLastKey) {
-              current[part] = flattened[key];
-            } else {
-              const nextPart = keys[i + 1];
-              const isNextPartNumeric = /^\d+$/.test(nextPart);
-
-              if (isNextPartNumeric) {
-                // Next part is an array index
-                if (!current[part]) {
-                  current[part] = [];
-                }
-                current = current[part];
+              if (isLastKey) {
+                current[part] = flattened[key];
               } else {
-                // Next part is an object key
-                if (!current[part]) {
-                  current[part] = {};
+                const nextPart = keys[i + 1];
+                const isNextPartNumeric = /^\d+$/.test(nextPart);
+
+                if (isNextPartNumeric) {
+                  // Next part is an array index
+                  if (!current[part]) {
+                    current[part] = [];
+                  }
+                  current = current[part] as Record<string, unknown>;
+                } else {
+                  // Next part is an object key
+                  if (!current[part]) {
+                    current[part] = {};
+                  }
+                  current = current[part] as Record<string, unknown>;
                 }
-                current = current[part];
               }
             }
           }

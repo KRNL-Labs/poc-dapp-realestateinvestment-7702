@@ -361,19 +361,27 @@
         "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "bundle",
         "config": {
-          "function_signature": "execute((address[],uint256[],uint256,uint256,bytes32),bytes,bytes)",
+          "function_signature": "execute((address,uint256,bytes32,address,uint256,uint256),bytes,bytes)",
           "parameters": [
             {
               "name": "intent",
               "type": "tuple",
               "components": [
                 {
-                  "name": "destinations",
-                  "type": "address[]"
+                  "name": "target",
+                  "type": "address"
                 },
                 {
-                  "name": "values",
-                  "type": "uint256[]"
+                  "name": "value",
+                  "type": "uint256"
+                },
+                {
+                  "name": "id",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "nodeAddress",
+                  "type": "address"
                 },
                 {
                   "name": "nonce",
@@ -382,10 +390,6 @@
                 {
                   "name": "deadline",
                   "type": "uint256"
-                },
-                {
-                  "name": "id",
-                  "type": "bytes32"
                 }
               ]
             },
@@ -402,11 +406,12 @@
         "inputs": {
           "value": {
             "intent": {
-              "destinations":"{{TRANSACTION_INTENT_DESTINATIONS}}",
-              "values": "{{TRANSACTION_INTENT_VALUES}}",
+              "target":"{{TRANSACTION_INTENT_TARGET}}",
+              "value": "{{TRANSACTION_INTENT_VALUE}}",
+              "id": "{{TRANSACTION_INTENT_ID}}",
+              "nodeAddress": "{{TRANSACTION_INTENT_NODE_ADDRESS}}",
               "nonce": "{{TRANSACTION_INTENT_NONCE}}",
-              "deadline": "{{TRANSACTION_INTENT_DEADLINE}}",
-              "id": "{{TRANSACTION_INTENT_ID}}"
+              "deadline": "{{TRANSACTION_INTENT_DEADLINE}}"
             },
             "func": "${target-calldata.result}",
             "signature": "{{USER_SIGNATURE}}"
@@ -433,7 +438,7 @@
           "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
           "entrypoint_address": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
           "target_contract": "{{ENV.TARGET_CONTRACT}}",
-          "function_signature": "execute((address[],uint256[],uint256,uint256,bytes32),bytes,bytes)",
+          "function_signature": "execute((address,uint256,bytes32,address,uint256,uint256),bytes,bytes)",
           "gas_limit": "100000",
           "max_fee_per_gas": "20000000000",
           "max_priority_fee_per_gas": "2000000000"
