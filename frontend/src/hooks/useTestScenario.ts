@@ -3,6 +3,7 @@ import { useWallets } from '@privy-io/react-auth';
 import { encodePacked, keccak256 } from 'viem';
 import testScenarioData from '../test-scenario.json';
 import DelegatedAccountABI from '../contracts/Delegated7702AccountV2.abi.json';
+import RealEstateInvestmentABI from '../contracts/RealEstateInvestment.abi.json';
 import { logger } from '../utils/logger';
 import { CONTRACT_ADDRESSES } from '../utils/constants';
 
@@ -47,18 +48,9 @@ export const useTestScenario = () => {
       const { ethers } = await import('ethers');
       const publicProvider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
 
-      // ABI for nonces function from TargetBase
-      const noncesABI = [{
-        "inputs": [{"name": "account", "type": "address"}],
-        "name": "nonces",
-        "outputs": [{"name": "", "type": "uint256"}],
-        "type": "function",
-        "stateMutability": "view"
-      }];
-
-      const targetContract = new ethers.Contract(REAL_ESTATE_INVESTMENT_ADDRESS, noncesABI, publicProvider);
+      const targetContract = new ethers.Contract(REAL_ESTATE_INVESTMENT_ADDRESS, RealEstateInvestmentABI, publicProvider);
       const nonce = await targetContract.nonces(embeddedWallet.address);
-      logger.debug('Current nonce from target contract:', nonce.toString());
+      logger.debug('Current nonce from RealEstateInvestment contract:', nonce.toString());
 
       // Create TransactionIntent with new structure
       const nodeAddress = '0x0000000000000000000000000000000000000000'; // TODO: Get from environment
@@ -227,7 +219,13 @@ export const useTestScenario = () => {
               .replace(/\{\{ENV\.SENDER_ADDRESS\}\}/g, embeddedWallet.address)
               .replace(/\{\{ENV\.TARGET_CONTRACT\}\}/g, REAL_ESTATE_INVESTMENT_ADDRESS)
               .replace(/\{\{ENV\.NODE_ADDRESS\}\}/g, nodeAddress)
-              .replace(/\{\{USER_SIGNATURE\}\}/g, signature);
+              .replace(/\{\{USER_SIGNATURE\}\}/g, signature)
+              .replace(/\{\{TRANSACTION_INTENT_TARGET\}\}/g, transactionIntent.target)
+              .replace(/\{\{TRANSACTION_INTENT_VALUE\}\}/g, transactionIntent.value.toString())
+              .replace(/\{\{TRANSACTION_INTENT_ID\}\}/g, transactionIntent.id)
+              .replace(/\{\{TRANSACTION_INTENT_NODE_ADDRESS\}\}/g, transactionIntent.nodeAddress)
+              .replace(/\{\{TRANSACTION_INTENT_NONCE\}\}/g, transactionIntent.nonce.toString())
+              .replace(/\{\{TRANSACTION_INTENT_DEADLINE\}\}/g, transactionIntent.deadline.toString());
           }
         }
       }
