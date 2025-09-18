@@ -200,7 +200,7 @@
               "confidence": "${ai-property-analysis.result.confidence}",
               "expectedAnnualYield": "${ai-property-analysis.result.expected_annual_yield}",
               "investmentGrade": "${ai-property-analysis.result.investment_grade}",
-              "propertyValue": "${ai-property-analysis.result.property_value}",
+              "propertyValue": "70000000000000000000000",
               "recommendation": "${ai-property-analysis.result.recommendation}"
             }
           }
