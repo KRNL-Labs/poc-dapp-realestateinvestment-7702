@@ -34,3 +34,5 @@ dist-ssr
 contracts/cache/
 contracts/out/
 contracts/broadcast/
+
+.vercel

@@ -1,0 +1,278 @@
+{
+  "sender": "{{ENV.SENDER_ADDRESS}}",
+  "executionFee": "0.0001",
+  "workflow": {
+    "name": "real-estate-investment-purchase-tokens",
+    "version": "v1.0.0",
+    "steps": [
+      {
+        "type": 10,
+        "name": "prepare-authdata",
+        "image": "ghcr.io/krnl-labs/executor-prepare-authdata@sha256:c8805aa78faedd9ad084e72a441b73d995f00e4380fa52321b8a4a8d187ff4ab",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeibtd2uqermf3dgdydqhoveddga6lbpredtuu6kaklulz3tjke6jfq",
+        "next": "target-calldata",
+        "config": {
+          "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
+          "target_contract": "{{ENV.TARGET_CONTRACT}}",
+          "function_signature": "purchaseTokens((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes),uint256)",
+          "sender": "{{ENV.SENDER_ADDRESS}}",
+          "sponsor_execution_fee": true
+        },
+        "inputs": {
+          "result": "0x00",
+          "executions": []
+        },
+        "outputs": [
+          {
+            "name": "nonce",
+            "type": "string",
+            "required": true,
+            "export": true
+          },
+          {
+            "name": "expiry",
+            "type": "string",
+            "required": true,
+            "export": true
+          },
+          {
+            "name": "id",
+            "type": "string",
+            "required": true,
+            "export": true
+          },
+          {
+            "name": "executions",
+            "type": "object[]",
+            "required": true,
+            "export": true
+          },
+          {
+            "name": "result",
+            "type": "string",
+            "required": true,
+            "export": true
+          },
+          {
+            "name": "sponsor_execution_fee",
+            "type": "bool",
+            "required": true,
+            "export": true
+          },
+          {
+            "name": "signature",
+            "type": "string",
+            "required": true,
+            "export": true
+          }
+        ]
+      },
+      {
+        "name": "target-calldata",
+        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:383b29c86e974c089b8a3dd5d5a8594f2a99e01e214dabe07f97f6989c9f4aa4",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeibtd2uqermf3dgdydqhoveddga6lbpredtuu6kaklulz3tjke6jfq",
+        "next": "sca-calldata",
+        "config": {
+          "function_signature":"purchaseTokens((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes),uint256)",
+          "parameters":[
+            {
+              "name":"authData",
+              "type":"tuple",
+              "components": [
+                {
+                  "name":"nonce",
+                  "type": "uint256"
+                },
+                {
+                  "name":"expiry",
+                  "type": "uint256"
+                },
+                {
+                  "name":"id",
+                  "type": "bytes32"
+                },
+                {
+                  "name":"executions",
+                  "type": "tuple[]",
+                  "components": [
+                    {
+                      "name":"id",
+                      "type": "bytes32"
+                    },
+                    {
+                      "name":"request",
+                      "type": "bytes"
+                    },
+                    {
+                      "name":"response",
+                      "type": "bytes"
+                    }
+                  ]
+                },
+                {
+                  "name":"result",
+                  "type": "bytes"
+                },
+                {
+                  "name":"sponsorExecutionFee",
+                  "type": "bool"
+                },
+                {
+                  "name":"signature",
+                  "type": "bytes"
+                }
+              ]
+            },
+            {
+              "name": "usdcAmount",
+              "type": "uint256"
+            }
+          ]
+        },
+        "inputs": {
+          "value": {
+            "authData": {
+              "nonce": "${prepare-authdata.nonce}",
+              "expiry": "${prepare-authdata.expiry}",
+              "id": "${prepare-authdata.id}",
+              "executions": [],
+              "result": "${prepare-authdata.result}",
+              "sponsorExecutionFee": "${prepare-authdata.sponsor_execution_fee}",
+              "signature": "${prepare-authdata.signature}"
+            },
+            "usdcAmount": "2000000000"
+          }
+        },
+        "outputs": [
+          {
+            "name": "result",
+            "type": "string",
+            "required": true,
+            "export": true
+          }
+        ]
+      },
+      {
+        "name": "sca-calldata",
+        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:383b29c86e974c089b8a3dd5d5a8594f2a99e01e214dabe07f97f6989c9f4aa4",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeibtd2uqermf3dgdydqhoveddga6lbpredtuu6kaklulz3tjke6jfq",
+        "next": "bundle",
+        "config": {
+          "function_signature": "execute((address,uint256,bytes32,address,address,uint256,uint256),bytes,bytes)",
+          "parameters": [
+            {
+              "name": "intent",
+              "type": "tuple",
+              "components": [
+                {
+                  "name": "target",
+                  "type": "address"
+                },
+                {
+                  "name": "value",
+                  "type": "uint256"
+                },
+                {
+                  "name": "id",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "nodeAddress",
+                  "type": "address"
+                },
+                {
+                  "name": "delegate",
+                  "type": "address"
+                },
+                {
+                  "name": "nonce",
+                  "type": "uint256"
+                },
+                {
+                  "name": "deadline",
+                  "type": "uint256"
+                }
+              ]
+            },
+            {
+              "name": "func",
+              "type": "bytes"
+            },
+            {
+              "name": "signature",
+              "type": "bytes"
+            }
+          ]
+        },
+        "inputs": {
+          "value": {
+            "intent": {
+              "target":"{{TRANSACTION_INTENT_TARGET}}",
+              "value": "{{TRANSACTION_INTENT_VALUE}}",
+              "id": "{{TRANSACTION_INTENT_ID}}",
+              "nodeAddress": "{{TRANSACTION_INTENT_NODE_ADDRESS}}",
+              "delegate": "{{TRANSACTION_INTENT_DELEGATE}}",
+              "nonce": "{{TRANSACTION_INTENT_NONCE}}",
+              "deadline": "{{TRANSACTION_INTENT_DEADLINE}}"
+            },
+            "func": "${target-calldata.result}",
+            "signature": "{{USER_SIGNATURE}}"
+          }
+        },
+        "outputs": [
+          {
+            "name": "result",
+            "type": "string",
+            "required": true,
+            "export": true
+          }
+        ]
+      },
+      {
+        "name": "bundle",
+        "image": "ghcr.io/krnl-labs/executor-data-bundle@sha256:f491bfe1e854014ecdafc5d59bf7f7c261789106515fac3e14346602b8179516",
+        "attestor": "https://public.mypinata.cloud/ipfs/bafybeibtd2uqermf3dgdydqhoveddga6lbpredtuu6kaklulz3tjke6jfq",
+        "config": {
+          "chain_id": 11155111,
+          "sender": "{{ENV.SENDER_ADDRESS}}",
+          "bundler_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_AFZB7SRqytR4SQ7x7jpNxd",
+          "paymaster_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_AFZB7SRqytR4SQ7x7jpNxd",
+          "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
+          "entrypoint_address": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+          "target_contract": "{{ENV.TARGET_CONTRACT}}",
+          "function_signature": "execute((address,uint256,bytes32,address,address,uint256,uint256),bytes,bytes)",
+          "gas_limit": "100000",
+          "max_fee_per_gas": "20000000000",
+          "max_priority_fee_per_gas": "2000000000"
+        },
+        "inputs": {
+          "calldata": "${sca-calldata.result}"
+        },
+        "outputs": [
+          {
+            "name": "user_op_hash",
+            "type": "string",
+            "required": true,
+            "export": true
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "required": true,
+            "export": true
+          },
+          {
+            "name": "error",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  "dapp": {
+    "name": "real-estate-investment",
+    "targetChainID": 11155111,
+    "targetContractAddress": "{{ENV.TARGET_CONTRACT}}",
+    "targetFunctionSignature": "purchaseTokens((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes),uint256)"
+  }
+}
