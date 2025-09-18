@@ -110,6 +110,7 @@ export const useTestScenario = () => {
         setError('Signature validation failed');
         return;
       }
+      
       if (scenarioType === 'B') await handleUSDCApproval(embeddedWallet);
 
       const selectedScenario = scenarioType === 'B' ? testScenarioBData : testScenarioData;
@@ -133,6 +134,8 @@ export const useTestScenario = () => {
       const flattenedWorkflowData = flattenObject(workflowData);
 
       if (scenarioType === 'A') flattenedWorkflowData['workflow.steps.5.inputs.value.authData.executions'] = [];
+      if (scenarioType === 'B') flattenedWorkflowData['workflow.steps.1.inputs.value.authData.executions'] = [];
+      
       const replacements: Record<string, string> = {
         '{{ENV.SENDER_ADDRESS}}': embeddedWallet.address,
         '{{ENV.TARGET_CONTRACT}}': REAL_ESTATE_INVESTMENT_ADDRESS,
@@ -171,8 +174,6 @@ export const useTestScenario = () => {
       };
       const processedWorkflow = unflattenObject(flattenedWorkflowData);
 
-
-
       const response = await fetch('https://v0-1-0.node.lat/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.oci.image.manifest.v1+json' },
@@ -189,7 +190,7 @@ export const useTestScenario = () => {
         clearInterval(pollInterval);
         setIsWaitingForTransaction(false);
         setError('Execution timeout');
-      }, 30000);
+      }, 60000);
 
       const pollInterval = setInterval(async () => {
         try {
