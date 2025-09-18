@@ -6,6 +6,8 @@ import { LogOut, Loader2, Play } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
 import { useTestScenario } from '@/hooks/useTestScenario';
+import { useMintUSDC } from '@/hooks/useMintUSDC';
+import { useUSDCBalance } from '@/hooks/useUSDCBalance';
 import { WalletInfoCard } from '@/components/WalletInfoCard';
 import { SmartAccountAuthCard } from '@/components/SmartAccountAuthCard';
 import { formatAddress, getChainName, switchNetwork } from '@/utils';
@@ -15,6 +17,8 @@ const Dashboard = () => {
   const { balance, isLoading: balanceLoading, wallet: embeddedWallet, chainInfo, isSwitching, refetch } = useWalletBalance();
   const { isAuthorized, smartAccountEnabled, isLoading: authLoading, error: authError, enableSmartAccount, refreshStatus, smartContractAddress, waitingForTx, txHash } = useSmartAccountAuth();
   const { executeWorkflow, isSubmitting, isWaitingForTransaction, submissionResult, executionResult, error: workflowError } = useTestScenario();
+  const { mintUSDC, isMinting: isMintingUSDC } = useMintUSDC();
+  const { usdcBalance, isLoading: isLoadingUSDC, refetch: refetchUSDC } = useUSDCBalance();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSwitchingToSepolia, setIsSwitchingToSepolia] = useState(false);
@@ -22,21 +26,21 @@ const Dashboard = () => {
 
   const refreshBalance = useCallback(async () => {
     setIsRefreshing(true);
-    await refetch();
+    await Promise.all([refetch(), refetchUSDC()]);
     setIsRefreshing(false);
-  }, [refetch]);
+  }, [refetch, refetchUSDC]);
 
   const switchToSepolia = useCallback(async () => {
     if (!embeddedWallet) return;
     setIsSwitchingToSepolia(true);
     try {
       await switchNetwork(embeddedWallet, 11155111);
-      await refetch();
+      await Promise.all([refetch(), refetchUSDC()]);
     } catch {
       // Ignore network switch errors
     }
     finally { setIsSwitchingToSepolia(false); }
-  }, [embeddedWallet, refetch]);
+  }, [embeddedWallet, refetch, refetchUSDC]);
 
 
 
@@ -69,6 +73,16 @@ const Dashboard = () => {
             isSwitchingToSepolia={isSwitchingToSepolia}
             onRefresh={refreshBalance}
             onSwitchToSepolia={switchToSepolia}
+            onMintUSDC={async () => {
+              const result = await mintUSDC();
+              if (result.success) {
+                await Promise.all([refetch(), refetchUSDC()]);
+              }
+              return result;
+            }}
+            isMintingUSDC={isMintingUSDC}
+            usdcBalance={usdcBalance}
+            isLoadingUSDC={isLoadingUSDC}
           />
           <SmartAccountAuthCard
             isAuthorized={isAuthorized}

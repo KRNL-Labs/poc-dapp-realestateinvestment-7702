@@ -1,7 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet, Copy, ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
+import { Wallet, Copy, ExternalLink, RefreshCw, Loader2, Coins } from 'lucide-react';
 import { formatAddress, formatBalance, getChainCurrency, getExplorerUrl, copyToClipboard, logger } from '@/utils';
 
 interface WalletInfoCardProps {
@@ -15,6 +15,10 @@ interface WalletInfoCardProps {
   isSwitchingToSepolia: boolean;
   onRefresh: () => Promise<void>;
   onSwitchToSepolia: () => Promise<void>;
+  onMintUSDC?: () => Promise<any>;
+  isMintingUSDC?: boolean;
+  usdcBalance?: string;
+  isLoadingUSDC?: boolean;
 }
 
 export const WalletInfoCard = memo(({
@@ -28,6 +32,10 @@ export const WalletInfoCard = memo(({
   isSwitchingToSepolia,
   onRefresh,
   onSwitchToSepolia,
+  onMintUSDC,
+  isMintingUSDC,
+  usdcBalance,
+  isLoadingUSDC,
 }: WalletInfoCardProps) => {
   const [copied, setCopied] = React.useState(false);
 
@@ -136,6 +144,22 @@ export const WalletInfoCard = memo(({
             </div>
           </div>
 
+          {/* USDC Balance Row */}
+          {chainId === 11155111 && (
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <span className="text-sm text-muted-foreground">USDC Balance</span>
+              <div className="flex items-center space-x-2">
+                {!address || isLoadingUSDC ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <span className="text-sm font-medium">
+                    {formatBalance(usdcBalance)} USDC
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Wallet Type Row */}
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
             <span className="text-sm text-muted-foreground">Wallet Type</span>
@@ -150,11 +174,32 @@ export const WalletInfoCard = memo(({
               onClick={handleViewExplorer}
               variant="outline"
               size="sm"
-              className="w-full"
+              className="flex-1"
             >
               <ExternalLink className="mr-2 h-3 w-3" />
               View on Explorer
             </Button>
+            {onMintUSDC && chainId === 11155111 && (
+              <Button
+                onClick={onMintUSDC}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                disabled={isMintingUSDC}
+              >
+                {isMintingUSDC ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Minting...
+                  </>
+                ) : (
+                  <>
+                    <Coins className="mr-2 h-3 w-3" />
+                    Mint 1M USDC
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         )}
 
