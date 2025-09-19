@@ -167,43 +167,4 @@ export function createTransactionIntent(
 }
 
 // ==================== WASM INITIALIZATION ====================
-
-declare global {
-  interface Window {
-    Go: new () => {
-      run: (instance: WebAssembly.Instance) => void;
-      importObject: WebAssembly.Imports;
-    };
-    makeUnsignTx: (params: string) => any;
-    compileUnsignTxWithSignature: (params: string) => any;
-  }
-}
-
-let wasmReady = false;
-
-export const initializeWasm = async (): Promise<void> => {
-  if (wasmReady) return;
-
-  try {
-    if (typeof window.Go === 'undefined') {
-      const script = document.createElement('script');
-      script.src = '/wasm_exec.js';
-      await new Promise((resolve, reject) => {
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    }
-
-    const go = new window.Go();
-    const wasmResponse = await fetch('/eip7702.wasm');
-    const wasmBytes = await wasmResponse.arrayBuffer();
-    const wasmModule = await WebAssembly.instantiate(wasmBytes, go.importObject);
-
-    go.run(wasmModule.instance);
-    wasmReady = true;
-  } catch (error) {
-    logger.error('Failed to initialize WASM:', error);
-    throw error;
-  }
-};
+// WASM initialization moved to SDK
