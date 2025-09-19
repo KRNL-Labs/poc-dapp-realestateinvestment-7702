@@ -1,6 +1,6 @@
 {
   "sender": "{{ENV.SENDER_ADDRESS}}",
-  "executionFee": "0.01",
+  "executionFee": "0.0001",
   "workflow": {
     "name": "real-estate-investment-submit-property-analysis",
     "version": "v1.0.0",
@@ -123,12 +123,12 @@
         "next": "construct-property-analysis-evm",
         "config": {},
         "inputs": {
-          "url": "https://api.openai.com/v1/chat/completions",
-          "method": "POST",
+          "url": "https://poc.platform.lat/openai/openai-api?poc=property-analysis",
+          "method": "GET",
           "headers": {
             "Accept": "*/*",
             "Content-Type": "application/json",
-            "Authorization": "Bearer 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"
+            "Authorization": "Bearer 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"
           },
           "body": {
             "model": "gpt-4o-mini",
@@ -200,7 +200,7 @@
               "confidence": "${ai-property-analysis.result.confidence}",
               "expectedAnnualYield": "${ai-property-analysis.result.expected_annual_yield}",
               "investmentGrade": "${ai-property-analysis.result.investment_grade}",
-              "propertyValue": "${ai-property-analysis.result.property_value}",
+              "propertyValue": "70000000000000000000000",
               "recommendation": "${ai-property-analysis.result.recommendation}"
             }
           }
@@ -361,37 +361,65 @@
         "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "bundle",
         "config": {
-          "function_signature": "execute(address,uint256,bytes,uint256,uint256)",
+          "function_signature": "execute((address,uint256,bytes32,address,address,uint256,uint256),bytes,bytes)",
           "parameters": [
             {
-              "name": "dest",
-              "type": "address"
-            },
-            {
-              "name": "value",
-              "type": "uint256"
+              "name": "intent",
+              "type": "tuple",
+              "components": [
+                {
+                  "name": "target",
+                  "type": "address"
+                },
+                {
+                  "name": "value",
+                  "type": "uint256"
+                },
+                {
+                  "name": "id",
+                  "type": "bytes32"
+                },
+                {
+                  "name": "nodeAddress",
+                  "type": "address"
+                },
+                {
+                  "name": "delegate",
+                  "type": "address"
+                },
+                {
+                  "name": "nonce",
+                  "type": "uint256"
+                },
+                {
+                  "name": "deadline",
+                  "type": "uint256"
+                }
+              ]
             },
             {
               "name": "func",
               "type": "bytes"
             },
             {
-              "name": "feeUsdcAmount",
-              "type": "uint256"
-            },
-            {
-              "name": "usdcPerEth",
-              "type": "uint256"
+              "name": "signature",
+              "type": "bytes"
             }
           ]
         },
         "inputs": {
           "value": {
-            "dest": "{{ENV.TARGET_CONTRACT}}",
-            "value": "0",
+            "intent": {
+              "target":"{{TRANSACTION_INTENT_TARGET}}",
+              "value": "{{TRANSACTION_INTENT_VALUE}}",
+              "id": "{{TRANSACTION_INTENT_ID}}",
+              "nodeAddress": "{{TRANSACTION_INTENT_NODE_ADDRESS}}",
+              "delegate": "{{TRANSACTION_INTENT_DELEGATE}}",
+              "nonce": "{{TRANSACTION_INTENT_NONCE}}",
+              "deadline": "{{TRANSACTION_INTENT_DEADLINE}}"
+            },
             "func": "${target-calldata.result}",
-            "feeUsdcAmount": "1000001",
-            "usdcPerEth": "3000000000"
+            "signature": "{{USER_SIGNATURE}}"
           }
         },
         "outputs": [
@@ -415,7 +443,7 @@
           "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
           "entrypoint_address": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
           "target_contract": "{{ENV.TARGET_CONTRACT}}",
-          "function_signature": "execute(address,uint256,bytes,uint256,uint256)",
+          "function_signature": "execute((address,uint256,bytes32,address,address,uint256,uint256),bytes,bytes)",
           "gas_limit": "100000",
           "max_fee_per_gas": "20000000000",
           "max_priority_fee_per_gas": "2000000000"

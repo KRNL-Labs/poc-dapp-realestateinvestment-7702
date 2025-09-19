@@ -1,19 +1,10 @@
 import { usePrivy } from '@privy-io/react-auth';
-import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wallet } from 'lucide-react';
 
 const Login = () => {
-  const { ready, authenticated, login } = usePrivy();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (ready && authenticated) {
-      navigate('/dashboard');
-    }
-  }, [ready, authenticated, navigate]);
+  const { ready, login } = usePrivy();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">

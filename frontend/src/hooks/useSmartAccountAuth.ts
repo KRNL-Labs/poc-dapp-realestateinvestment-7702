@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallets, useSign7702Authorization } from '@privy-io/react-auth';
-import { getRequiredChainId } from '../utils/chains';
-import { initializeWasm } from '../utils/transactionSerializer';
+import { getRequiredChainId, initializeWasm } from '../utils';
+
+interface AuthorizationStatus {
+  isAuthorized: boolean;
+  smartAccountEnabled: boolean;
+}
+
+
 
 export const useSmartAccountAuth = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -19,7 +25,9 @@ export const useSmartAccountAuth = () => {
 
   const smartContractAddress = import.meta.env.VITE_DELEGATED_ACCOUNT_ADDRESS as string;
   useEffect(() => {
-    initializeWasm().catch(console.error);
+    initializeWasm().catch(() => {
+      // WASM initialization failed
+    });
   }, []);
 
   const checkAuthorizationStatus = useCallback(async () => {
@@ -35,14 +43,13 @@ export const useSmartAccountAuth = () => {
       setSmartAccountEnabled(authStatus.smartAccountEnabled);
       
     } catch (err) {
-      console.error('Error checking authorization status:', err);
       setError((err as Error).message);
       setIsAuthorized(false);
       setSmartAccountEnabled(false);
     } finally {
       setIsLoading(false);
     }
-  }, [embeddedWallet?.address, smartContractAddress]);
+  }, [embeddedWallet, smartContractAddress]);
 
   const enableSmartAccount = useCallback(async () => {
     if (!embeddedWallet?.address || !smartContractAddress) return false;
@@ -65,11 +72,13 @@ export const useSmartAccountAuth = () => {
         address: embeddedWallet.address
       });
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const convertBigInts = (obj: any): any => {
         if (typeof obj === 'bigint') {
           return Number(obj);
         }
         if (typeof obj === 'object' && obj !== null) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const converted: any = {};
           for (const [key, value] of Object.entries(obj)) {
             converted[key] = convertBigInts(value);
@@ -103,7 +112,8 @@ export const useSmartAccountAuth = () => {
         ]
       };
       
-      const u = window.makeUnsignTx(JSON.stringify(params));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const u = (window as any).makeUnsignTx(JSON.stringify(params));
       
       if (u.error) {
         throw new Error(`WASM makeUnsignTx error: ${u.error}`);
@@ -121,16 +131,18 @@ export const useSmartAccountAuth = () => {
       
       const signature = hashSignature;
       
-      const c = window.compileUnsignTxWithSignature(JSON.stringify({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const c = (window as any).compileUnsignTxWithSignature(JSON.stringify({
         chainId: params.chainId,
         unsignedTx: u.unsignedTx,
-        signature: signature,
+        signature,
       }));
       
       if (c.error) {
         throw new Error(`WASM compile error: ${c.error}`);
       }
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const broadcastTxHash = await (window.ethereum as any).request({
         method: 'eth_sendRawTransaction',
         params: [c.signedTx]
@@ -144,7 +156,7 @@ export const useSmartAccountAuth = () => {
         const txHash = result.transactionHash;
         
         let receipt = null;
-        let attempts = 0;
+        let _attempts = 0;
         
         while (!receipt) {
           try {
@@ -166,16 +178,14 @@ export const useSmartAccountAuth = () => {
                 receipt = null;
               }
             }
-          } catch (err) {
-            
+          } catch {
+            // Continue waiting for receipt
           }
           
           await new Promise(resolve => setTimeout(resolve, 5000));
-          attempts++;
+          _attempts++;
           
-          if (attempts % 12 === 0) {
-            console.log(`Still waiting for transaction confirmation... (${Math.floor(attempts * 5 / 60)} minutes)`);
-          }
+          // Still waiting for confirmation
         }
         
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -190,7 +200,6 @@ export const useSmartAccountAuth = () => {
       }
       
     } catch (err) {
-      console.error('Error enabling smart account:', err);
       setError((err as Error).message);
       setWaitingForTx(false);
       setTxHash(null);
@@ -198,7 +207,7 @@ export const useSmartAccountAuth = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [embeddedWallet?.address, smartContractAddress, signAuthorization, checkAuthorizationStatus]);
+  }, [embeddedWallet, smartContractAddress, signAuthorization, checkAuthorizationStatus]);
 
 
   useEffect(() => {
@@ -220,7 +229,8 @@ export const useSmartAccountAuth = () => {
   };
 };
 
-async function checkEIP7702Authorization(provider: any, walletAddress: string, contractAddress: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function checkEIP7702Authorization(provider: any, walletAddress: string, contractAddress: string): Promise<AuthorizationStatus> {
   try {
     const accountCode = await provider.request({
       method: 'eth_getCode',
@@ -242,14 +252,9 @@ async function checkEIP7702Authorization(provider: any, walletAddress: string, c
         // Authorization is true if wallet code contains the contract address
         isAuthorized = accountCodeWithoutPrefix.includes(contractAddressWithoutPrefix);
         
-        console.log('Authorization check results:');
-        console.log('- Wallet address:', walletAddress);
-        console.log('- Contract address:', contractAddress);
-        console.log('- Wallet code:', accountCode);
-        console.log('- Contract address in wallet code:', isAuthorized);
+        // Authorization check completed
         
-      } catch (authCheckError) {
-        console.log('Authorization check failed:', authCheckError);
+      } catch {
         isAuthorized = false;
       }
     }
@@ -259,8 +264,7 @@ async function checkEIP7702Authorization(provider: any, walletAddress: string, c
       smartAccountEnabled
     };
     
-  } catch (error) {
-    console.error('Error checking EIP-7702 status:', error);
+  } catch {
     return {
       isAuthorized: false,
       smartAccountEnabled: false
