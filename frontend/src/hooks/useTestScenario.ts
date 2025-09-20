@@ -174,13 +174,18 @@ export const useTestScenario = () => {
       };
       const processedWorkflow = unflattenObject(flattenedWorkflowData);
 
-      const response = await fetch('https://v0-1-0.node.lat/', {
+      const KRNL_RPC_URL = 'https://v0-1-0.node.lat/';
+
+      const response = await fetch(KRNL_RPC_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.oci.image.manifest.v1+json' },
         body: JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'krnl_executeWorkflow', params: [processedWorkflow] })
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
       const data = await response.json();
+      if (data.result.admissionResult.accepted == false) throw new Error(data.result.admissionResult.reason);
+
       setSubmissionResult(data);
 
       setIsSubmitting(false);
@@ -194,25 +199,137 @@ export const useTestScenario = () => {
 
       const pollInterval = setInterval(async () => {
         try {
-          const { ethers } = await import('ethers');
-          const provider = new ethers.JsonRpcProvider(RPC_URL);
-          const contract = new ethers.Contract(embeddedWallet.address, DelegatedAccountABI, provider);
-          const currentBlock = await provider.getBlockNumber();
-          const events = await contract.queryFilter(contract.filters.TransactionIntentExecuted(), Math.max(0, currentBlock - 100), currentBlock);
-          const matchingEvent = events.find(event => 'args' in event && event.args?.intentId === transactionIntent.id);
+          const statusResponse = await fetch(KRNL_RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'krnl_workflowStatus',
+              params: [
+                transactionIntent.id
+              ],
+              id: 1
+            })
+          });
 
-          if (matchingEvent && 'args' in matchingEvent) {
-            clearInterval(pollInterval);
-            clearTimeout(timeoutId);
-            setIsWaitingForTransaction(false);
-            setExecutionResult({
-              transactionHash: matchingEvent.transactionHash,
-              blockNumber: matchingEvent.blockNumber,
-              args: matchingEvent.args
-            });
+          if (!statusResponse.ok) {
+            console.error(`Status check failed: HTTP ${statusResponse.status}`);
+            return;
           }
-        } catch {
-          // Ignore polling errors
+
+          const statusData = await statusResponse.json();
+          const { code, result } = statusData.result || {};
+
+          // Status codes
+          const CODE_PENDING = 0;
+          const CODE_PROCESSING = 1;
+          const CODE_SUCCESS = 2;
+          const CODE_FAILED = 3;
+          const CODE_INTENT_NOT_FOUND = 4;
+          const CODE_WORKFLOW_NOT_FOUND = 5;
+          const CODE_INVALID = 6;
+
+          switch (code) {
+            case CODE_PENDING:
+            case CODE_PROCESSING:
+              // Continue polling
+              return;
+
+            case CODE_SUCCESS:
+              clearInterval(pollInterval);
+              clearTimeout(timeoutId);
+
+              // Poll for transaction confirmation
+              const txHash = result as string;
+              if (!txHash) {
+                setIsWaitingForTransaction(false);
+                setError('Transaction hash not received');
+                break;
+              }
+
+              console.log('Transaction hash received:', txHash);
+              const { ethers } = await import('ethers');
+              const provider = new ethers.JsonRpcProvider(RPC_URL);
+
+              let confirmationInterval: NodeJS.Timeout;
+              let confirmationTimeout: NodeJS.Timeout;
+
+              const checkReceipt = async () => {
+                try {
+                  const tx = await provider.getTransaction(txHash);
+                  if (tx) {
+                    console.log('Transaction confirmed:', {
+                      hash: txHash,
+                      blockNumber: tx.blockNumber
+                    });
+
+                    clearInterval(confirmationInterval);
+                    clearTimeout(confirmationTimeout);
+                    setIsWaitingForTransaction(false);
+                    setExecutionResult({
+                      transactionHash: txHash,
+                      blockNumber: tx.blockNumber || 0,
+                      args: tx,
+                    });
+                  } else {
+                    console.log('Transaction pending, continuing to poll...');
+                  }
+                } catch (error) {
+                  console.error('Error checking transaction receipt:', error);
+                }
+              };
+
+              // Start polling
+              confirmationInterval = setInterval(checkReceipt, 2000);
+
+              // Initial check
+              await checkReceipt();
+
+              // Set timeout for transaction confirmation (e.g., 2 minutes)
+              confirmationTimeout = setTimeout(() => {
+                clearInterval(confirmationInterval);
+                setIsWaitingForTransaction(false);
+                setError('Transaction confirmation timeout');
+              }, 1200000);
+              break;
+
+            case CODE_FAILED:
+              clearInterval(pollInterval);
+              clearTimeout(timeoutId);
+              setIsWaitingForTransaction(false);
+              setError('Workflow execution failed');
+              break;
+
+            case CODE_INTENT_NOT_FOUND:
+              clearInterval(pollInterval);
+              clearTimeout(timeoutId);
+              setIsWaitingForTransaction(false);
+              setError('Intent not found');
+              break;
+
+            case CODE_WORKFLOW_NOT_FOUND:
+              clearInterval(pollInterval);
+              clearTimeout(timeoutId);
+              setIsWaitingForTransaction(false);
+              setError('Workflow not found');
+              break;
+
+            case CODE_INVALID:
+              clearInterval(pollInterval);
+              clearTimeout(timeoutId);
+              setIsWaitingForTransaction(false);
+              setError('Invalid workflow status');
+              break;
+
+            default:
+              clearInterval(pollInterval);
+              clearTimeout(timeoutId);
+              setIsWaitingForTransaction(false);
+              setError(`Unknown status code: ${code}`);
+              break;
+          }
+        } catch (error) {
+          console.error('Polling error:', error);
         }
       }, 5000);
     } catch (error) {
