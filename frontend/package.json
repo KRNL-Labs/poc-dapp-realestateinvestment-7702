@@ -11,7 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@krnl-dev/sdk-react": "^0.1.0",
+    "@krnl-dev/sdk-react": "^0.1.1",
     "@privy-io/react-auth": "^3.0.1",
     "@radix-ui/react-label": "^2.1.7",
     "@tailwindcss/vite": "^4.1.13",

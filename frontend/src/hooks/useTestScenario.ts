@@ -8,7 +8,6 @@ import {
   http,
   custom,
   getContract,
-  hexToBytes,
   maxUint256
 } from 'viem';
 import { sepolia } from 'viem/chains';
@@ -140,13 +139,13 @@ export const useTestScenario = () => {
 
       const intentId = keccak256(encodePacked(['address', 'uint256', 'uint256'], [embeddedWallet.address as `0x${string}`, nonce, BigInt(deadline)])) as `0x${string}`;
 
-      const transactionIntent: TransactionIntentParams & { targetFunction: string } = {
+      const transactionIntent: TransactionIntentParams = {
         target: REAL_ESTATE_INVESTMENT_ADDRESS as `0x${string}`,
         value: BigInt(0),
         id: intentId,
         nodeAddress: nodeAddress as `0x${string}`,
         delegate: DELEGATE_OWNER as `0x${string}`,
-        targetFunction: functionSelectorBytes,
+        targetFunction: functionSelectorBytes as `0x${string}`,
         nonce,
         deadline: BigInt(deadline)
       };
