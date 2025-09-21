@@ -8,6 +8,7 @@ import {
   http,
   custom,
   getContract,
+  hexToBytes,
   maxUint256
 } from 'viem';
 import { sepolia } from 'viem/chains';
@@ -105,14 +106,47 @@ export const useTestScenario = () => {
 
       const nodeAddress = '0x0000000000000000000000000000000000000000';
       const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+      // Get the target function selector from the RealEstateInvestment contract
+      const targetFunctionName = scenarioType === 'B' ? 'purchaseTokens' : 'submitPropertyAnalysis';
+      const targetFunctionSelector = RealEstateInvestmentABI.find(
+        (item: any) => item.type === 'function' && item.name === targetFunctionName
+      );
+      if (!targetFunctionSelector) {
+        throw new Error(`Function ${targetFunctionName} not found in ABI`);
+      }
+
+      // Create function signature and get selector (first 4 bytes of keccak256)
+      // For tuple types, we need to build the nested structure properly
+      const buildTypeString = (input: any): string => {
+        if (input.type === 'tuple') {
+          const components = input.components.map((comp: any) => buildTypeString(comp)).join(',');
+          return `(${components})`;
+        } else if (input.type === 'tuple[]') {
+          const components = input.components.map((comp: any) => buildTypeString(comp)).join(',');
+          return `(${components})[]`;
+        } else {
+          return input.type;
+        }
+      };
+
+      const functionSig = `${targetFunctionName}(${targetFunctionSelector.inputs.map((input: any) => buildTypeString(input)).join(',')})`;
+      const functionSelectorBytes = keccak256(encodePacked(['string'], [functionSig])).slice(0, 10);
+
+      // Ensure it's exactly 4 bytes (8 hex chars + 0x)
+      if (functionSelectorBytes.length !== 10) {
+        throw new Error(`Invalid function selector length: ${functionSelectorBytes.length}`);
+      }
+
       const intentId = keccak256(encodePacked(['address', 'uint256', 'uint256'], [embeddedWallet.address as `0x${string}`, nonce, BigInt(deadline)])) as `0x${string}`;
 
-      const transactionIntent: TransactionIntentParams = {
+      const transactionIntent: TransactionIntentParams & { targetFunction: string } = {
         target: REAL_ESTATE_INVESTMENT_ADDRESS as `0x${string}`,
         value: BigInt(0),
         id: intentId,
         nodeAddress: nodeAddress as `0x${string}`,
         delegate: DELEGATE_OWNER as `0x${string}`,
+        targetFunction: functionSelectorBytes,
         nonce,
         deadline: BigInt(deadline)
       };
@@ -155,6 +189,7 @@ export const useTestScenario = () => {
         '{{TRANSACTION_INTENT_ID}}': transactionIntent.id,
         '{{TRANSACTION_INTENT_NODE_ADDRESS}}': transactionIntent.nodeAddress,
         '{{TRANSACTION_INTENT_DELEGATE}}': transactionIntent.delegate,
+        '{{TRANSACTION_INTENT_TARGET_FUNCTION}}': transactionIntent.targetFunction,
         '{{TRANSACTION_INTENT_NONCE}}': transactionIntent.nonce.toString(),
         '{{TRANSACTION_INTENT_DEADLINE}}': transactionIntent.deadline.toString()
       };

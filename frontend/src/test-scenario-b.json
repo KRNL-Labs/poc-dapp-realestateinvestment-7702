@@ -157,7 +157,7 @@
         "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "bundle",
         "config": {
-          "function_signature": "execute((address,uint256,bytes32,address,address,uint256,uint256),bytes,bytes)",
+          "function_signature": "execute((address,uint256,bytes32,address,address,bytes4,uint256,uint256),bytes,bytes)",
           "parameters": [
             {
               "name": "intent",
@@ -182,6 +182,10 @@
                 {
                   "name": "delegate",
                   "type": "address"
+                },
+                {
+                  "name": "targetFunction",
+                  "type": "bytes4"
                 },
                 {
                   "name": "nonce",
@@ -211,6 +215,7 @@
               "id": "{{TRANSACTION_INTENT_ID}}",
               "nodeAddress": "{{TRANSACTION_INTENT_NODE_ADDRESS}}",
               "delegate": "{{TRANSACTION_INTENT_DELEGATE}}",
+              "targetFunction": "{{TRANSACTION_INTENT_TARGET_FUNCTION}}",
               "nonce": "{{TRANSACTION_INTENT_NONCE}}",
               "deadline": "{{TRANSACTION_INTENT_DEADLINE}}"
             },
@@ -239,7 +244,7 @@
           "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
           "entrypoint_address": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
           "target_contract": "{{ENV.TARGET_CONTRACT}}",
-          "function_signature": "execute((address,uint256,bytes32,address,address,uint256,uint256),bytes,bytes)",
+          "function_signature": "execute((address,uint256,bytes32,address,address,bytes4,uint256,uint256),bytes,bytes)",
           "gas_limit": "100000",
           "max_fee_per_gas": "20000000000",
           "max_priority_fee_per_gas": "2000000000"
