@@ -161,7 +161,7 @@
       },
       {
         "name": "construct-property-analysis-evm",
-        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
+        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:d4c0ad1b77efa27a637a06002d3b04f2ed52d71affa5c5165f3daf91c4f053c7",
         "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "prepare-authdata",
         "config": {
@@ -277,7 +277,7 @@
       },
       {
         "name": "target-calldata",
-        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
+        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:d4c0ad1b77efa27a637a06002d3b04f2ed52d71affa5c5165f3daf91c4f053c7",
         "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "sca-calldata",
         "config": {
@@ -357,7 +357,7 @@
       },
       {
         "name": "sca-calldata",
-        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
+        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:d4c0ad1b77efa27a637a06002d3b04f2ed52d71affa5c5165f3daf91c4f053c7",
         "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
         "next": "bundle",
         "config": {
