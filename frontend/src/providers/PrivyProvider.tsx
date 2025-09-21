@@ -16,9 +16,9 @@ const PrivyProvider = ({ children }: PrivyProviderProps) => {
           logo: 'https://your-logo-url.com/logo.png',
         },
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
-          requireUserPasswordOnCreate: false,
-          noPromptOnSignature: true,
+          ethereum: {
+            createOnLogin: 'users-without-wallets'
+          }
         },
         defaultChain: {
           id: 11155111, // Sepolia
@@ -38,7 +38,6 @@ const PrivyProvider = ({ children }: PrivyProviderProps) => {
           },
         },
         walletConnectCloudProjectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID,
-        connectorInitTimeout: 10000, // 10 seconds
         loginMethods: ['wallet', 'email', 'sms'],
         supportedChains: [
           {
