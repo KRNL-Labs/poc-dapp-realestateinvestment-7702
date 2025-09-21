@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PrivyProvider from './providers/PrivyProvider';
-import { KRNLProvider } from '../../sdk/src';
+import { KRNLProvider } from '@krnl-dev/sdk-react';
 import { config } from './lib/krnl';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
