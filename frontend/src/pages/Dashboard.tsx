@@ -22,13 +22,13 @@ const Dashboard = () => {
     error: authError,
     enableSmartAccount,
     checkAuth: refreshStatus,
-    contractAddress,
+    delegatedContractAddress,
     isAuthenticated,
     isReady,
     walletsReady,
   } = useKRNL();
 
-  const smartContractAddress = contractAddress || import.meta.env.VITE_DELEGATED_ACCOUNT_ADDRESS as string;
+  const smartContractAddress = delegatedContractAddress || import.meta.env.VITE_DELEGATED_ACCOUNT_ADDRESS as string;
   const { executeWorkflow, isSubmitting, isWaitingForTransaction, submissionResult, executionResult, error: workflowError } = useTestScenario();
   const { mintUSDC, isMinting: isMintingUSDC } = useMintUSDC();
   const { usdcBalance, isLoading: isLoadingUSDC, refetch: refetchUSDC } = useUSDCBalance();
