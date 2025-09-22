@@ -15,6 +15,7 @@ interface WalletInfoCardProps {
   isSwitchingToSepolia: boolean;
   onRefresh: () => Promise<void>;
   onSwitchToSepolia: () => Promise<void>;
+  onSwitchToMainnet?: () => Promise<void>;
   onMintUSDC?: () => Promise<any>;
   isMintingUSDC?: boolean;
   usdcBalance?: string;
@@ -32,6 +33,7 @@ export const WalletInfoCard = memo(({
   isSwitchingToSepolia,
   onRefresh,
   onSwitchToSepolia,
+  onSwitchToMainnet,
   onMintUSDC,
   isMintingUSDC,
   usdcBalance,
@@ -117,14 +119,29 @@ export const WalletInfoCard = memo(({
               ) : (
                 <>
                   <span className="text-sm font-medium">{chainName}</span>
-                  <Button
-                    onClick={onSwitchToSepolia}
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                  >
-                    Switch to Sepolia
-                  </Button>
+                  {chainId === 11155111 ? (
+                    // On Sepolia, show button to switch to Mainnet
+                    onSwitchToMainnet && (
+                      <Button
+                        onClick={onSwitchToMainnet}
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                      >
+                        Switch to Mainnet
+                      </Button>
+                    )
+                  ) : (
+                    // On other chains, show button to switch to Sepolia
+                    <Button
+                      onClick={onSwitchToSepolia}
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                    >
+                      Switch to Sepolia
+                    </Button>
+                  )}
                 </>
               )}
             </div>

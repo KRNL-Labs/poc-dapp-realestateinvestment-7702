@@ -8,8 +8,8 @@
       {
         "type": 10,
         "name": "property-data-fetcher",
-        "image": "ghcr.io/krnl-labs/executor-http@sha256:7ea7eae002f173aab994444e9e0863f8a8fd8255c7ed3a234218e66c3e1f3c60",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
+        "image": "ghcr.io/krnl-labs/executor-http@sha256:07ef35b261014304a0163502a7f1dec5395c5cac1fc381dc1f79b052389ab0d5",
+        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
         "next": "market-data-fetcher",
         "config": {},
         "inputs": {
@@ -51,8 +51,8 @@
       },
       {
         "name": "market-data-fetcher",
-        "image": "ghcr.io/krnl-labs/executor-http@sha256:7ea7eae002f173aab994444e9e0863f8a8fd8255c7ed3a234218e66c3e1f3c60",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
+        "image": "ghcr.io/krnl-labs/executor-http@sha256:07ef35b261014304a0163502a7f1dec5395c5cac1fc381dc1f79b052389ab0d5",
+        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
         "next": "ai-property-analysis",
         "config": {},
         "inputs": {
@@ -118,8 +118,8 @@
       },
       {
         "name": "ai-property-analysis",
-        "image": "ghcr.io/krnl-labs/executor-http@sha256:7ea7eae002f173aab994444e9e0863f8a8fd8255c7ed3a234218e66c3e1f3c60",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
+        "image": "ghcr.io/krnl-labs/executor-http@sha256:07ef35b261014304a0163502a7f1dec5395c5cac1fc381dc1f79b052389ab0d5",
+        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
         "next": "construct-property-analysis-evm",
         "config": {},
         "inputs": {
@@ -128,7 +128,7 @@
           "headers": {
             "Accept": "*/*",
             "Content-Type": "application/json",
-            "Authorization": "Bearer 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"
+            "Authorization": "Bearer ${_SECRETS.OPENAI_API_KEY}"
           },
           "body": {
             "model": "gpt-4o-mini",
@@ -161,8 +161,8 @@
       },
       {
         "name": "construct-property-analysis-evm",
-        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
+        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:b28823d12eb1b16cbcc34c751302cd2dbe7e35480a5bc20e4e7ad50a059b6611",
+        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
         "next": "prepare-authdata",
         "config": {
           "parameters": [
@@ -216,11 +216,11 @@
       },
       {
         "name": "prepare-authdata",
-        "image": "ghcr.io/krnl-labs/executor-prepare-authdata@sha256:3a1c9c8828da07f1da367b91fbd0a41f47274af63bc521a6c2499aee04e02e30",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
+        "image": "ghcr.io/krnl-labs/executor-prepare-authdata@sha256:075e7733db357fe18ddd745372bbea44eaa854c60856c0bdb2a8442c88bc80f9",
+        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
         "next": "target-calldata",
         "config": {
-          "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
+          "rpc_url": "${_SECRETS.rpcSepoliaURL}",
           "target_contract": "{{ENV.TARGET_CONTRACT}}",
           "function_signature": "submitPropertyAnalysis((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes))",
           "sender": "{{ENV.SENDER_ADDRESS}}",
@@ -277,8 +277,8 @@
       },
       {
         "name": "target-calldata",
-        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
+        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:b28823d12eb1b16cbcc34c751302cd2dbe7e35480a5bc20e4e7ad50a059b6611",
+        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
         "next": "sca-calldata",
         "config": {
           "function_signature": "submitPropertyAnalysis((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes))",
@@ -357,11 +357,11 @@
       },
       {
         "name": "sca-calldata",
-        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:2f1cfef0107e4ff200539234d10bde2c3ba1f7982b75a806e3d38feacb1d4091",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
+        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:b28823d12eb1b16cbcc34c751302cd2dbe7e35480a5bc20e4e7ad50a059b6611",
+        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
         "next": "bundle",
         "config": {
-          "function_signature": "execute((address,uint256,bytes32,address,address,uint256,uint256),bytes,bytes)",
+          "function_signature": "execute((address,uint256,bytes32,address,address,bytes4,uint256,uint256),bytes,bytes)",
           "parameters": [
             {
               "name": "intent",
@@ -386,6 +386,10 @@
                 {
                   "name": "delegate",
                   "type": "address"
+                },
+                {
+                  "name": "targetFunction",
+                  "type": "bytes4"
                 },
                 {
                   "name": "nonce",
@@ -415,6 +419,7 @@
               "id": "{{TRANSACTION_INTENT_ID}}",
               "nodeAddress": "{{TRANSACTION_INTENT_NODE_ADDRESS}}",
               "delegate": "{{TRANSACTION_INTENT_DELEGATE}}",
+              "targetFunction": "{{TRANSACTION_INTENT_TARGET_FUNCTION}}",
               "nonce": "{{TRANSACTION_INTENT_NONCE}}",
               "deadline": "{{TRANSACTION_INTENT_DEADLINE}}"
             },
@@ -433,17 +438,17 @@
       },
       {
         "name": "bundle",
-        "image": "ghcr.io/krnl-labs/executor-data-bundle@sha256:ff49252428eb8adcb1462d0d8ab4c46e2bb2eb5576ec7d717430197597beba78",
-        "attestor": "https://public.mypinata.cloud/ipfs/bafybeihxz6sjyhumjsgecuc74hedktbvbuinkstssql6ofivqrbg6omzxi",
+        "image": "ghcr.io/krnl-labs/executor-data-bundle@sha256:a1d98f6e2e5ea1b4ca326dbdf85033d31f6ee8db930f0593e3bb9c5ff905a982",
+        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
         "config": {
           "chain_id": 11155111,
           "sender": "{{ENV.SENDER_ADDRESS}}",
-          "bundler_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_AFZB7SRqytR4SQ7x7jpNxd",
-          "paymaster_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_AFZB7SRqytR4SQ7x7jpNxd",
-          "rpc_url": "https://lb.drpc.org/sepolia/AnRM4mK1tEyphrn_jexSLbpLCWW7uMMR76KguivZK8k9",
+          "bundler_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=${_SECRETS.pimlico-apikey}",
+          "paymaster_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=${_SECRETS.pimlico-apikey}",
+          "rpc_url": "${_SECRETS.rpcSepoliaURL}",
           "entrypoint_address": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
           "target_contract": "{{ENV.TARGET_CONTRACT}}",
-          "function_signature": "execute((address,uint256,bytes32,address,address,uint256,uint256),bytes,bytes)",
+          "function_signature": "execute((address,uint256,bytes32,address,address,bytes4,uint256,uint256),bytes,bytes)",
           "gas_limit": "100000",
           "max_fee_per_gas": "20000000000",
           "max_priority_fee_per_gas": "2000000000"

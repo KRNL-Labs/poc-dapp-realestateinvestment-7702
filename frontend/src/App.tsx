@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PrivyProvider from './providers/PrivyProvider';
+import { KRNLProvider } from '@krnl-dev/sdk-react';
+import { config } from './lib/krnl';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
@@ -31,13 +33,15 @@ function App() {
   return (
     <ErrorBoundary>
       <PrivyProvider>
-        <Router>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<MainApp />} />
-            </Routes>
-          </Suspense>
-        </Router>
+        <KRNLProvider config={config}>
+          <Router>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<MainApp />} />
+              </Routes>
+            </Suspense>
+          </Router>
+        </KRNLProvider>
       </PrivyProvider>
     </ErrorBoundary>
   );

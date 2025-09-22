@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, Loader2, Play } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
-import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
+import { useKRNL } from '@krnl-dev/sdk-react';
 import { useTestScenario } from '@/hooks/useTestScenario';
 import { useMintUSDC } from '@/hooks/useMintUSDC';
 import { useUSDCBalance } from '@/hooks/useUSDCBalance';
@@ -15,7 +15,20 @@ import { formatAddress, getChainName, switchNetwork } from '@/utils';
 const Dashboard = () => {
   const { logout } = usePrivy();
   const { balance, isLoading: balanceLoading, wallet: embeddedWallet, chainInfo, isSwitching, refetch } = useWalletBalance();
-  const { isAuthorized, smartAccountEnabled, isLoading: authLoading, error: authError, enableSmartAccount, refreshStatus, smartContractAddress, waitingForTx, txHash } = useSmartAccountAuth();
+  const {
+    isAuthorized,
+    smartAccountEnabled,
+    isLoading: authLoading,
+    error: authError,
+    enableSmartAccount,
+    checkAuth: refreshStatus,
+    contractAddress,
+    isAuthenticated,
+    isReady,
+    walletsReady,
+  } = useKRNL();
+
+  const smartContractAddress = contractAddress || import.meta.env.VITE_DELEGATED_ACCOUNT_ADDRESS as string;
   const { executeWorkflow, isSubmitting, isWaitingForTransaction, submissionResult, executionResult, error: workflowError } = useTestScenario();
   const { mintUSDC, isMinting: isMintingUSDC } = useMintUSDC();
   const { usdcBalance, isLoading: isLoadingUSDC, refetch: refetchUSDC } = useUSDCBalance();
@@ -89,14 +102,16 @@ const Dashboard = () => {
             smartAccountEnabled={smartAccountEnabled}
             smartContractAddress={smartContractAddress}
             isLoading={authLoading}
-            waitingForTx={waitingForTx}
-            txHash={txHash}
             error={authError}
             onRefreshStatus={refreshStatus}
             onEnableSmartAccount={async () => { await enableSmartAccount(); }}
             embeddedWalletAddress={embeddedWallet?.address}
+            isAuthenticated={isAuthenticated}
+            isReady={isReady}
+            walletsReady={walletsReady}
           />
         </div>
+
 
         <Card>
           <CardHeader>

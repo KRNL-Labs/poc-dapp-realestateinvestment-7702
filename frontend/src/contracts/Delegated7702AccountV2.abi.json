@@ -79,6 +79,11 @@
             "internalType": "address"
           },
           {
+            "name": "targetFunction",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          },
+          {
             "name": "nonce",
             "type": "uint256",
             "internalType": "uint256"
@@ -408,6 +413,11 @@
             "name": "delegate",
             "type": "address",
             "internalType": "address"
+          },
+          {
+            "name": "targetFunction",
+            "type": "bytes4",
+            "internalType": "bytes4"
           },
           {
             "name": "nonce",

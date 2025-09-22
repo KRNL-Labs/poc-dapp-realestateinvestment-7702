@@ -16,34 +16,48 @@ const PrivyProvider = ({ children }: PrivyProviderProps) => {
           logo: 'https://your-logo-url.com/logo.png',
         },
         embeddedWallets: {
-          createOnLogin: 'all-users',
-          requireUserPasswordOnCreate: false,
+          ethereum: {
+            createOnLogin: 'users-without-wallets'
+          }
         },
         defaultChain: {
-          id: 1, // Ethereum Mainnet
-          name: 'Ethereum',
-          network: 'homestead',
+          id: 11155111, // Sepolia
+          name: 'Sepolia',
+          network: 'sepolia',
           nativeCurrency: {
             decimals: 18,
-            name: 'Ether',
+            name: 'Sepolia Ether',
             symbol: 'ETH',
           },
           rpcUrls: {
-            default: {
-              http: ['https://mainnet.infura.io/v3/'],
-            },
-            public: {
-              http: ['https://mainnet.infura.io/v3/'],
-            },
+            default: { http: ['https://sepolia.infura.io/v3/'] },
+            public: { http: ['https://sepolia.infura.io/v3/'] },
           },
           blockExplorers: {
-            default: {
-              name: 'Etherscan',
-              url: 'https://etherscan.io',
-            },
+            default: { name: 'Sepolia Etherscan', url: 'https://sepolia.etherscan.io' },
           },
         },
         walletConnectCloudProjectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID,
+        loginMethods: ['wallet', 'email', 'sms'],
+        supportedChains: [
+          {
+            id: 11155111, // Sepolia
+            name: 'Sepolia',
+            network: 'sepolia',
+            nativeCurrency: {
+              decimals: 18,
+              name: 'Sepolia Ether',
+              symbol: 'ETH',
+            },
+            rpcUrls: {
+              default: { http: ['https://sepolia.infura.io/v3/'] },
+              public: { http: ['https://sepolia.infura.io/v3/'] },
+            },
+            blockExplorers: {
+              default: { name: 'Sepolia Etherscan', url: 'https://sepolia.etherscan.io' },
+            },
+          },
+        ],
       }}
     >
       {children}

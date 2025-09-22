@@ -2,20 +2,20 @@ import React, { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, RefreshCw, Loader2, CheckCircle, XCircle, Settings, Copy } from 'lucide-react';
-import { formatAddress, copyToClipboard, getTxExplorerUrl, logger } from '@/utils';
-import { DEFAULT_CHAIN_ID } from '@/const';
+import { formatAddress, copyToClipboard, logger } from '@/utils';
 
 interface SmartAccountAuthCardProps {
   isAuthorized: boolean;
   smartAccountEnabled: boolean;
   smartContractAddress?: string;
   isLoading: boolean;
-  waitingForTx: boolean;
-  txHash?: string | null;
   error?: string | null;
   onRefreshStatus: () => Promise<void>;
   onEnableSmartAccount: () => Promise<void>;
   embeddedWalletAddress?: string;
+  isAuthenticated?: boolean;
+  isReady?: boolean;
+  walletsReady?: boolean;
 }
 
 export const SmartAccountAuthCard = memo(({
@@ -23,12 +23,13 @@ export const SmartAccountAuthCard = memo(({
   smartAccountEnabled,
   smartContractAddress,
   isLoading,
-  waitingForTx,
-  txHash,
   error,
   onRefreshStatus,
   onEnableSmartAccount,
   embeddedWalletAddress,
+  isAuthenticated = false,
+  isReady = false,
+  walletsReady = false,
 }: SmartAccountAuthCardProps) => {
   const isValidSmartContract = smartContractAddress &&
     smartContractAddress !== '0x0000000000000000000000000000000000000000' &&
@@ -124,40 +125,28 @@ export const SmartAccountAuthCard = memo(({
           <div className="space-y-3 pt-4">
             <Button
               onClick={onEnableSmartAccount}
-              disabled={isLoading || waitingForTx || isAuthorized}
+              disabled={isLoading || isAuthorized || !isAuthenticated || !isReady || !walletsReady}
               variant={isAuthorized ? "outline" : "default"}
               className="w-full flex items-center justify-center"
             >
-              {waitingForTx ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Waiting for transaction...
+                  Processing...
                 </>
               ) : (
                 <>
                   <Settings className="mr-2 h-4 w-4" />
-                  {isAuthorized ? 'Already Authorized' : 'Authorize Smart Account'}
+                  {isAuthorized
+                    ? 'Already Authorized'
+                    : !isAuthenticated || !isReady || !walletsReady
+                      ? 'Authentication Required'
+                      : 'Authorize Smart Account'
+                  }
                 </>
               )}
             </Button>
 
-            {/* Transaction Status */}
-            {waitingForTx && txHash && (
-              <div className="text-center text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                <div className="flex items-center justify-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Transaction pending: {formatAddress(txHash, 10)}</span>
-                </div>
-                <a
-                  href={getTxExplorerUrl(txHash, DEFAULT_CHAIN_ID)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs underline hover:no-underline mt-1 inline-block"
-                >
-                  View on Explorer
-                </a>
-              </div>
-            )}
 
             {/* Error Display */}
             {error && (

@@ -19,6 +19,7 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
         bytes32 id;
         address nodeAddress;
         address delegate;
+        bytes4 targetFunction;
         uint256 nonce;
         uint256 deadline;
     }
@@ -54,6 +55,11 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
         if (block.timestamp > intent.deadline) {
             revert IntentExpired(intent.deadline);
         }
+
+        // Verify function selector matches intent
+        require(func.length >= 4, "Invalid function data");
+        bytes4 funcSelector = bytes4(func[0:4]);
+        require(funcSelector == intent.targetFunction, "Function selector mismatch");
 
         // Check nonce if target supports it
         if (_implementsTargetBase(intent.target)) {
@@ -162,6 +168,7 @@ contract Delegated7702AccountV2 is Simple7702AccountV07 {
                 intent.id,
                 intent.nodeAddress,
                 intent.delegate,
+                intent.targetFunction,
                 intent.nonce,
                 intent.deadline
             )
