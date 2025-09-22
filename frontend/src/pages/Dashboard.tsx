@@ -8,6 +8,9 @@ import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useSmartAccountAuth } from '@/hooks/useSmartAccountAuth';
 import { useDelegatedAccount } from '@/hooks/useDelegatedAccount';
 import { useTestScenario } from '@/hooks/useTestScenario';
+import { keccak256, encodePacked } from 'viem';
+import RealEstateInvestmentABI from '../contracts/RealEstateInvestment.abi.json';
+import DelegatedAccountABI from '../contracts/Delegated7702AccountV2.abi.json';
 
 const Dashboard = () => {
   const { ready, authenticated, user, logout } = usePrivy();
@@ -48,6 +51,173 @@ const Dashboard = () => {
   const [workflowInput, setWorkflowInput] = useState('');
   const [erc20ApproveAddress, setErc20ApproveAddress] = useState("");
   const [erc20ApproveLoading, setErc20ApproveLoading] = useState(false);
+
+  // TransactionIntent UI state
+  const [nodeAddress, setNodeAddress] = useState("");
+  const [targetContract, setTargetContract] = useState("");
+  const [targetOwner, setTargetOwner] = useState("");
+  const [intentError, setIntentError] = useState<string | null>(null);
+  const [intentResult, setIntentResult] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+
+
+  const handleProcessIntent = async () => {
+    setIntentError(null);
+    setIntentResult(null);
+    setProcessing(true);
+    try {
+      const RPC_URL = 'https://ethereum-sepolia-rpc.publicnode.com';
+      // Find the embedded wallet
+      const embeddedWalletObj = wallets.find(wallet =>
+        wallet.connectorType === 'embedded' &&
+        wallet.walletClientType === 'privy'
+      );
+
+      if (!embeddedWalletObj?.address) {
+        throw new Error('No embedded wallet found');
+      }
+
+      // Get provider and switch to Sepolia
+      const provider = await embeddedWalletObj.getEthereumProvider();
+      await embeddedWalletObj.switchChain(11155111); // Sepolia
+
+      // Import ethers and get nonce from contract
+      const { ethers } = await import('ethers');
+      const publicProvider = new ethers.JsonRpcProvider(RPC_URL);
+
+      const realEstateContract = new ethers.Contract(
+        targetContract,
+        RealEstateInvestmentABI,
+        publicProvider
+      );
+      const nonce = await realEstateContract.nonces(embeddedWalletObj.address);
+
+      // Use nodeAddress from state or fallback
+      const nodeAddr = nodeAddress || '0x0000000000000000000000000000000000000000';
+      const deadline = Math.floor(Date.now() / 1000) + 7200; // 1 hour from now
+
+      // Compute intentId
+      const intentId = keccak256(
+        encodePacked(
+          ['address', 'uint256', 'uint256'],
+          [embeddedWalletObj.address as `0x${string}`, BigInt(nonce), BigInt(deadline)]
+        )
+      ) as `0x${string}`;
+
+      const transactionIntent = {
+        target: targetContract as `0x${string}`,
+        value: BigInt(0),
+        id: intentId,
+        nodeAddress: nodeAddr as `0x${string}`,
+        nonce: BigInt(nonce),
+        deadline: BigInt(deadline)
+      };
+
+      console.log('TransactionIntent:', transactionIntent);
+
+      // Hash for signing
+      const intentHash = keccak256(
+        encodePacked(
+          ['address', 'uint256', 'bytes32', 'address', 'uint256', 'uint256'],
+          [
+            transactionIntent.target,
+            transactionIntent.value,
+            transactionIntent.id,
+            transactionIntent.nodeAddress,
+            transactionIntent.nonce,
+            transactionIntent.deadline
+          ]
+        )
+      );
+
+      console.log('intentHash:', intentHash);
+
+      // Request signature
+      let signature: `0x${string}`;
+      try {
+        signature = await provider.request({
+          method: 'personal_sign',
+          params: [intentHash, embeddedWalletObj.address]
+        }) as `0x${string}`;
+      } catch (signError) {
+        const errorMessage = signError instanceof Error ? signError.message : String(signError);
+        setIntentError(`Failed to get signature: ${errorMessage}`);
+        setProcessing(false);
+        return;
+      }
+
+      console.log('Signature:', signature);
+
+      try {
+        console.log('Validating signature on-chain...');
+        const { ethers: validationEthers } = await import('ethers');
+        const validationProvider = new validationEthers.JsonRpcProvider(RPC_URL);
+        const iface = new validationEthers.Interface(DelegatedAccountABI);
+        console.log('DelegatedAccountABI Interface created');
+         const intentStruct = {
+          target: transactionIntent.target,
+          value: transactionIntent.value.toString(),
+          id: transactionIntent.id,
+          nodeAddress: transactionIntent.nodeAddress,
+          nonce: transactionIntent.nonce.toString(),
+          deadline: transactionIntent.deadline.toString()
+        };
+        console.log('Intent Struct:', intentStruct);
+
+        console.log(iface)
+
+        const calldata = iface.encodeFunctionData('validateIntentSignature', [
+          [
+            intentStruct.target,
+            intentStruct.value,
+            intentStruct.id,
+            intentStruct.nodeAddress,
+            intentStruct.nonce,
+            intentStruct.deadline
+          ],
+          signature
+        ]);
+
+        console.log('\n\n');
+        console.log('Calldata for validation:', calldata);
+        console.log('\n-----------------------------\n');
+        console.log('target:', intentStruct.target)
+        console.log('value:', intentStruct.value);
+        console.log('id:', intentStruct.id);
+        console.log('nodeAddress:', intentStruct.nodeAddress);
+        console.log('nonce:', intentStruct.nonce);
+        console.log('deadline:', intentStruct.deadline);
+        console.log('signature:', signature);
+
+        console.log('\n\n');
+
+        const result = await validationProvider.call({
+          to: embeddedWalletObj.address,
+          data: calldata
+        });
+
+        const [isValid, signer] = iface.decodeFunctionResult('validateIntentSignature', result);
+
+        console.log('Validation result:', { isValid, signer });
+
+        if (!isValid) {
+          setIntentError('Signature validation failed. The signature does not match the wallet address.');
+          setProcessing(false);
+          return;
+        }
+      } catch (validationError) {
+        const errorMessage = validationError instanceof Error ? validationError.message : String(validationError);
+        setIntentError(`Signature validation error: ${errorMessage}`);
+        setProcessing(false);
+        return;
+      }
+      setIntentResult("TransactionIntent processed successfully!");
+    } catch (err: any) {
+      setIntentError(err.message || "Unknown error");
+    }
+    setProcessing(false);
+  };
+
 
   // Debug logging
   useEffect(() => {
@@ -425,6 +595,34 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div style={{ marginTop: 32, padding: 24, border: "1px solid #eee", borderRadius: 8 }}>
+                <h3>Transaction Intent Workflow</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 400 }}>
+                  <input
+                    type="text"
+                    placeholder="Node Address"
+                    value={nodeAddress}
+                    onChange={e => setNodeAddress(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Target Contract"
+                    value={targetContract}
+                    onChange={e => setTargetContract(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Target Owner"
+                    value={targetOwner}
+                    onChange={e => setTargetOwner(e.target.value)}
+                  />
+                  <button onClick={handleProcessIntent} disabled={processing}>
+                    {processing ? "Processing..." : "Process Transaction Intent"}
+                  </button>
+                  {intentError && <div style={{ color: "red" }}>{intentError}</div>}
+                  {intentResult && <div style={{ color: "green" }}>{intentResult}</div>}
+                </div>
+              </div>
               <div className="border rounded-lg p-4 space-y-4">
                 <h3 className="text-lg font-medium">Test Workflow Execution</h3>
                 <p className="text-sm text-muted-foreground">
@@ -485,6 +683,8 @@ const Dashboard = () => {
                     </div>
                   )}
                 </div>
+
+                
 
                 {/* Init Data Button using useDelegatedAccount */}
                 <Button
