@@ -13,7 +13,7 @@
         "next": "market-data-fetcher",
         "config": {},
         "inputs": {
-          "url": "https://poc.platform.lat/zillow/webservice/GetSearchResults.htm?zws-id=demo-api-key&address=1234-Maple-Street&citystatezip=Austin,TX",
+          "url": "https://poc.platform.lat/zillow/webservice/GetSearchResults.htm?zws-id=demo-api-key&address={{PROPERTY_ADDRESS}}&citystatezip={{CITY_STATE_ZIP}}",
           "method": "GET"
         },
         "outputs": [

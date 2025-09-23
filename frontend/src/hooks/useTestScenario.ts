@@ -80,7 +80,7 @@ export const useTestScenario = () => {
     }
   };
 
-  const executeTestWorkflow = async (scenarioType: 'A' | 'B' = 'A') => {
+  const executeTestWorkflow = async (scenarioType: 'A' | 'B' = 'A', propertyAddress?: string, cityStateZip?: string, usdcAmount?: string) => {
     setError(null);
 
     try {
@@ -190,7 +190,10 @@ export const useTestScenario = () => {
         '{{TRANSACTION_INTENT_DELEGATE}}': transactionIntent.delegate,
         '{{TRANSACTION_INTENT_TARGET_FUNCTION}}': transactionIntent.targetFunction,
         '{{TRANSACTION_INTENT_NONCE}}': transactionIntent.nonce.toString(),
-        '{{TRANSACTION_INTENT_DEADLINE}}': transactionIntent.deadline.toString()
+        '{{TRANSACTION_INTENT_DEADLINE}}': transactionIntent.deadline.toString(),
+        '{{PROPERTY_ADDRESS}}': propertyAddress || '1234-Maple-Street',
+        '{{CITY_STATE_ZIP}}': cityStateZip || 'Austin,TX',
+        '{{USDC_AMOUNT}}': usdcAmount ? (parseFloat(usdcAmount) * 1000000).toString() : '100000000'
       };
       for (const key in flattenedWorkflowData) {
         if (typeof flattenedWorkflowData[key] === 'string') {

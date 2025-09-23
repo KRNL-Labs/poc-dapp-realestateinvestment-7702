@@ -139,7 +139,7 @@
               "sponsorExecutionFee": "${prepare-authdata.sponsor_execution_fee}",
               "signature": "${prepare-authdata.signature}"
             },
-            "usdcAmount": "1100000000"
+            "usdcAmount": "{{USDC_AMOUNT}}"
           }
         },
         "outputs": [
