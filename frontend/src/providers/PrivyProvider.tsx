@@ -17,7 +17,7 @@ const PrivyProvider = ({ children }: PrivyProviderProps) => {
         },
         embeddedWallets: {
           ethereum: {
-            createOnLogin: 'users-without-wallets'
+            createOnLogin: "all-users",
           }
         },
         defaultChain: {
