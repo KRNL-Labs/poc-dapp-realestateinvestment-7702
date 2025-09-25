@@ -1,283 +1,37 @@
 {
+  "chain_id": 11155111,
   "sender": "{{ENV.SENDER_ADDRESS}}",
-  "executionFee": "0.0001",
-  "workflow": {
-    "name": "real-estate-investment-purchase-tokens",
-    "version": "v1.0.0",
-    "steps": [
+  "delegate": "{{TRANSACTION_INTENT_DELEGATE}}",
+  "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
+  "target": {
+    "contract": "{{ENV.TARGET_CONTRACT}}",
+    "function": "purchaseTokens((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes),uint256)",
+    "authData_result": "0x00",
+    "parameters": [
       {
-        "name": "prepare-authdata",
-        "image": "ghcr.io/krnl-labs/executor-prepare-authdata@sha256:075e7733db357fe18ddd745372bbea44eaa854c60856c0bdb2a8442c88bc80f9",
-        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
-        "next": "target-calldata",
-        "config": {
-          "rpc_url": "${_SECRETS.rpcSepoliaURL}",
-          "target_contract": "{{ENV.TARGET_CONTRACT}}",
-          "function_signature": "purchaseTokens((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes),uint256)",
-          "sender": "{{ENV.SENDER_ADDRESS}}",
-          "sponsor_execution_fee": true
-        },
-        "inputs": {
-          "result": "0x00",
-          "executions": []
-        },
-        "outputs": [
-          {
-            "name": "nonce",
-            "value": "nonce",
-            "required": true,
-            "export": true
-          },
-          {
-            "name": "expiry",
-            "value": "expiry",
-            "required": true,
-            "export": true
-          },
-          {
-            "name": "id",
-            "value": "id",
-            "required": true,
-            "export": true
-          },
-          {
-            "name": "executions",
-            "value": "executions",
-            "required": true,
-            "export": true
-          },
-          {
-            "name": "result",
-            "value": "result",
-            "required": true,
-            "export": true
-          },
-          {
-            "name": "sponsor_execution_fee",
-            "value": "sponsor_execution_fee",
-            "required": true,
-            "export": true
-          },
-          {
-            "name": "signature",
-            "value": "signature",
-            "required": true,
-            "export": true
-          }
-        ]
-      },
-      {
-        "name": "target-calldata",
-        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:b28823d12eb1b16cbcc34c751302cd2dbe7e35480a5bc20e4e7ad50a059b6611",
-        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
-        "next": "sca-calldata",
-        "config": {
-          "function_signature":"purchaseTokens((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes),uint256)",
-          "parameters":[
-            {
-              "name": "authData",
-              "type": "tuple",
-              "components": [
-                {
-                  "name": "nonce",
-                  "type": "uint256"
-                },
-                {
-                  "name": "expiry",
-                  "type": "uint256"
-                },
-                {
-                  "name": "id",
-                  "type": "bytes32"
-                },
-                {
-                  "name": "executions",
-                  "type": "tuple[]",
-                  "components": [
-                    {
-                      "name": "id",
-                      "type": "bytes32"
-                    },
-                    {
-                      "name": "request",
-                      "type": "bytes"
-                    },
-                    {
-                      "name": "response",
-                      "type": "bytes"
-                    }
-                  ]
-                },
-                {
-                  "name": "result",
-                  "type": "bytes"
-                },
-                {
-                  "name": "sponsorExecutionFee",
-                  "type": "bool"
-                },
-                {
-                  "name": "signature",
-                  "type": "bytes"
-                }
-              ]
-            },
-            {
-              "name": "usdcAmount",
-              "type": "uint256"
-            }
-          ]
-        },
-        "inputs": {
-          "value": {
-            "authData": {
-              "nonce": "${prepare-authdata.nonce}",
-              "expiry": "${prepare-authdata.expiry}",
-              "id": "${prepare-authdata.id}",
-              "executions": [],
-              "result": "${prepare-authdata.result}",
-              "sponsorExecutionFee": "${prepare-authdata.sponsor_execution_fee}",
-              "signature": "${prepare-authdata.signature}"
-            },
-            "usdcAmount": "{{USDC_AMOUNT}}"
-          }
-        },
-        "outputs": [
-          {
-            "name": "result",
-            "value": "result",
-            "required": true,
-            "export": true
-          }
-        ]
-      },
-      {
-        "name": "sca-calldata",
-        "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:b28823d12eb1b16cbcc34c751302cd2dbe7e35480a5bc20e4e7ad50a059b6611",
-        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
-        "next": "bundle",
-        "config": {
-          "function_signature": "execute((address,uint256,bytes32,address,address,bytes4,uint256,uint256),bytes,bytes)",
-          "parameters": [
-            {
-              "name": "intent",
-              "type": "tuple",
-              "components": [
-                {
-                  "name": "target",
-                  "type": "address"
-                },
-                {
-                  "name": "value",
-                  "type": "uint256"
-                },
-                {
-                  "name": "id",
-                  "type": "bytes32"
-                },
-                {
-                  "name": "nodeAddress",
-                  "type": "address"
-                },
-                {
-                  "name": "delegate",
-                  "type": "address"
-                },
-                {
-                  "name": "targetFunction",
-                  "type": "bytes4"
-                },
-                {
-                  "name": "nonce",
-                  "type": "uint256"
-                },
-                {
-                  "name": "deadline",
-                  "type": "uint256"
-                }
-              ]
-            },
-            {
-              "name": "func",
-              "type": "bytes"
-            },
-            {
-              "name": "signature",
-              "type": "bytes"
-            }
-          ]
-        },
-        "inputs": {
-          "value": {
-            "intent": {
-              "target":"{{TRANSACTION_INTENT_TARGET}}",
-              "value": "{{TRANSACTION_INTENT_VALUE}}",
-              "id": "{{TRANSACTION_INTENT_ID}}",
-              "nodeAddress": "{{TRANSACTION_INTENT_NODE_ADDRESS}}",
-              "delegate": "{{TRANSACTION_INTENT_DELEGATE}}",
-              "targetFunction": "{{TRANSACTION_INTENT_TARGET_FUNCTION}}",
-              "nonce": "{{TRANSACTION_INTENT_NONCE}}",
-              "deadline": "{{TRANSACTION_INTENT_DEADLINE}}"
-            },
-            "func": "${target-calldata.result}",
-            "signature": "{{USER_SIGNATURE}}"
-          }
-        },
-        "outputs": [
-          {
-            "name": "result",
-            "value": "result",
-            "required": true,
-            "export": true
-          }
-        ]
-      },
-      {
-        "name": "bundle",
-        "image": "ghcr.io/krnl-labs/executor-data-bundle@sha256:a1d98f6e2e5ea1b4ca326dbdf85033d31f6ee8db930f0593e3bb9c5ff905a982",
-        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
-        "config": {
-          "chain_id": 11155111,
-          "sender": "{{ENV.SENDER_ADDRESS}}",
-          "bundler_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=${_SECRETS.pimlico-apikey}",
-          "paymaster_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=${_SECRETS.pimlico-apikey}",
-          "rpc_url": "${_SECRETS.rpcSepoliaURL}",
-          "entrypoint_address": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-          "target_contract": "{{ENV.TARGET_CONTRACT}}",
-          "function_signature": "execute((address,uint256,bytes32,address,address,bytes4,uint256,uint256),bytes,bytes)",
-          "gas_limit": "100000",
-          "max_fee_per_gas": "20000000000",
-          "max_priority_fee_per_gas": "2000000000"
-        },
-        "inputs": {
-          "calldata": "${sca-calldata.result}"
-        },
-        "outputs": [
-          {
-            "name": "user_op_hash",
-            "value": "user_op_hash",
-            "required": true,
-            "export": true
-          },
-          {
-            "name": "status",
-            "value": "status",
-            "required": true,
-            "export": true
-          },
-          {
-            "name": "error",
-            "value": "error",
-            "type": "string"
-          }
-        ]
+        "name": "usdcAmount",
+        "type": "uint256",
+        "value": "{{USDC_AMOUNT}}"
       }
     ]
   },
-  "dapp": {
-    "name": "real-estate-investment",
-    "targetChainID": 11155111,
-    "targetContractAddress": "{{ENV.TARGET_CONTRACT}}",
-    "targetFunctionSignature": "purchaseTokens((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes),uint256)"
+  "sponsor_execution_fee": true,
+  "value": "0",
+  "intent": {
+    "id": "{{TRANSACTION_INTENT_ID}}",
+    "signature": "{{USER_SIGNATURE}}",
+    "deadline": "{{TRANSACTION_INTENT_DEADLINE}}"
+  },
+  "rpc_url": "${_SECRETS.rpcSepoliaURL}",
+  "bundler_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=${_SECRETS.pimlico-apikey}",
+  "paymaster_url": "https://api.pimlico.io/v2/sepolia/rpc?apikey=${_SECRETS.pimlico-apikey}",
+  "gas_limit": "100000",
+  "max_fee_per_gas": "20000000000",
+  "max_priority_fee_per_gas": "2000000000",
+
+  "workflow": {
+    "name": "real-estate-investment-purchase-tokens",
+    "version": "v1.0.0",
+    "steps": []
   }
 }
