@@ -103,7 +103,7 @@ export const useTestScenario = () => {
 
       const nonce = await contract.read.nonces([embeddedWallet.address]) as bigint;
 
-      const nodeAddress = '0x0000000000000000000000000000000000000000';
+      const nodeAddress = '0xF090B7794A47d9cAF080F17c68e6FeA88A85CBD9'; // Staging server node address
       const deadline = Math.floor(Date.now() / 1000) + 3600;
 
       // Get the target function selector from the RealEstateInvestment contract
