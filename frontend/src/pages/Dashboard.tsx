@@ -39,7 +39,7 @@ const Dashboard = () => {
   const [activeScenario, setActiveScenario] = useState<'A' | 'B' | null>(null);
   const [propertyAddress, setPropertyAddress] = useState('1234-Maple-Street');
   const [cityStateZip, setCityStateZip] = useState('Austin,TX');
-  const [usdcAmount, setUsdcAmount] = useState('100');
+  const [usdcAmount, setUsdcAmount] = useState('1000');
   const [copied, setCopied] = useState(false);
   const [copiedSmart, setCopiedSmart] = useState(false);
 
@@ -148,6 +148,7 @@ const Dashboard = () => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount)) return 'USDC amount must be a valid number';
     if (numAmount <= 0) return 'USDC amount must be greater than 0';
+    if (numAmount < 1000) return 'USDC amount must be at least 1,000';
     if (numAmount > 1000000) return 'USDC amount cannot exceed 1,000,000';
     return '';
   };
