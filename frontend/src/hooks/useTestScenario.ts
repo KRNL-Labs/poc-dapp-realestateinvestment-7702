@@ -174,22 +174,14 @@ export const useTestScenario = () => {
         return result;
       };
       const flattenedWorkflowData = flattenObject(workflowData);
-
-      if (scenarioType === 'A') flattenedWorkflowData['workflow.steps.5.inputs.value.authData.executions'] = [];
-      if (scenarioType === 'B') flattenedWorkflowData['workflow.steps.1.inputs.value.authData.executions'] = [];
       
       const replacements: Record<string, string> = {
         '{{ENV.SENDER_ADDRESS}}': embeddedWallet.address,
         '{{ENV.TARGET_CONTRACT}}': REAL_ESTATE_INVESTMENT_ADDRESS,
-        '{{ENV.NODE_ADDRESS}}': nodeAddress,
         '{{USER_SIGNATURE}}': signature,
-        '{{TRANSACTION_INTENT_TARGET}}': transactionIntent.target,
         '{{TRANSACTION_INTENT_VALUE}}': transactionIntent.value.toString(),
         '{{TRANSACTION_INTENT_ID}}': transactionIntent.id,
-        '{{TRANSACTION_INTENT_NODE_ADDRESS}}': transactionIntent.nodeAddress,
         '{{TRANSACTION_INTENT_DELEGATE}}': transactionIntent.delegate,
-        '{{TRANSACTION_INTENT_TARGET_FUNCTION}}': transactionIntent.targetFunction,
-        '{{TRANSACTION_INTENT_NONCE}}': transactionIntent.nonce.toString(),
         '{{TRANSACTION_INTENT_DEADLINE}}': transactionIntent.deadline.toString(),
         '{{PROPERTY_ADDRESS}}': propertyAddress || '1234-Maple-Street',
         '{{CITY_STATE_ZIP}}': cityStateZip || 'Austin,TX',
