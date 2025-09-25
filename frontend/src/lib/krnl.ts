@@ -1,4 +1,4 @@
-import { createConfig } from '@krnl-dev/sdk-react';
+import { createConfig } from '@krnl-dev/sdk-react-7702';
 import { sepolia } from 'viem/chains';
 
 // Get environment variables with fallbacks for development
@@ -9,7 +9,7 @@ const rpcUrl = import.meta.env.VITE_RPC_URL as string || 'https://lb.drpc.org/se
 
 // Create KRNL config with viem chain
 export const config = createConfig({
-  chain: sepolia,
+  chain: sepolia as any,
   delegatedContractAddress,
   privyAppId,
   krnlNodeUrl,

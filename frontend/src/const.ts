@@ -68,6 +68,11 @@ export const FEE_CONFIG = {
 } as const;
 
 export const DELEGATE_OWNER = import.meta.env.VITE_DELEGATE_OWNER;
+export const NODE_ADDRESS = import.meta.env.VITE_NODE_ADDRESS || '0x0000000000000000000000000000000000000000';
+
+// Contract addresses used in workflows
+export const REAL_ESTATE_INVESTMENT_ADDRESS = CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT;
+export const MOCK_USDC_ADDRESS = CONTRACT_ADDRESSES.MOCK_USDC;
 
 // ==================== UI CONSTANTS ====================
 
