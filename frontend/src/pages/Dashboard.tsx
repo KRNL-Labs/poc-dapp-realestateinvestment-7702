@@ -206,6 +206,7 @@ const Dashboard = () => {
           usdcBalance={usdcBalance}
           isLoadingUSDC={isLoadingUSDC}
           refetchUSDC={refetchUSDC}
+          balance={balance}
           onPropertyAddressChange={handlePropertyAddressChange}
           onCityStateZipChange={handleCityStateZipChange}
           onUsdcAmountChange={handleUsdcAmountChange}

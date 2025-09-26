@@ -6,6 +6,7 @@ import { config } from './lib/krnl';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
+import { Toaster } from 'react-hot-toast';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('./pages/Login'));
@@ -41,6 +42,7 @@ function App() {
               </Routes>
             </Suspense>
           </Router>
+          <Toaster />
         </KRNLProvider>
       </PrivyProvider>
     </ErrorBoundary>

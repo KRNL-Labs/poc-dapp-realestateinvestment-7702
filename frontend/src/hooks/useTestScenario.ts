@@ -11,12 +11,12 @@ import {
   maxUint256
 } from 'viem';
 import { sepolia } from 'viem/chains';
-import { useKRNL, type TransactionIntentParams, type PrivyEmbeddedWallet, type WorkflowObject } from '@krnl-dev/sdk-react-7702';
+import { useKRNL, useNodeConfig, type TransactionIntentParams, type PrivyEmbeddedWallet, type WorkflowObject } from '@krnl-dev/sdk-react-7702';
 import testScenarioData from '../test-scenario.json';
 import testScenarioBData from '../test-scenario-b.json';
 import RealEstateInvestmentABI from '../contracts/RealEstateInvestment.abi.json';
 import ERC20ABI from '../contracts/ERC20.abi.json';
-import { RPC_URL, DELEGATE_OWNER, NODE_ADDRESS, REAL_ESTATE_INVESTMENT_ADDRESS, MOCK_USDC_ADDRESS } from '../const';
+import { RPC_URL, DELEGATE_OWNER, REAL_ESTATE_INVESTMENT_ADDRESS, MOCK_USDC_ADDRESS } from '../const';
 import type { ABIInput, ABIFunction } from '../types';
 
 
@@ -31,6 +31,7 @@ export const useTestScenario = () => {
     steps,
     currentStep
   } = useKRNL();
+  const { getConfig } = useNodeConfig();
   const [error, setError] = useState<string | null>(null);
 
 
@@ -128,7 +129,7 @@ export const useTestScenario = () => {
     return functionSelectorBytes;
   };
 
-  const createTransactionIntent = (embeddedWallet: PrivyEmbeddedWallet, scenarioType: 'A' | 'B', nonce: bigint): TransactionIntentParams => {
+  const createTransactionIntent = (embeddedWallet: PrivyEmbeddedWallet, scenarioType: 'A' | 'B', nonce: bigint, nodeAddress: string): TransactionIntentParams => {
     const deadline = Math.floor(Date.now() / 1000) + 3600;
     const functionSelector = getFunctionSelector(scenarioType);
 
@@ -141,7 +142,7 @@ export const useTestScenario = () => {
       target: REAL_ESTATE_INVESTMENT_ADDRESS as `0x${string}`,
       value: BigInt(0),
       id: intentId,
-      nodeAddress: NODE_ADDRESS as `0x${string}`,
+      nodeAddress: nodeAddress as `0x${string}`,
       delegate: DELEGATE_OWNER as `0x${string}`,
       targetFunction: functionSelector as `0x${string}`,
       nonce,
@@ -193,8 +194,13 @@ export const useTestScenario = () => {
         await handleUSDCApproval(embeddedWallet);
       }
 
+      const nodeConfig = await getConfig();
+      if (!nodeConfig.workflow.node_address) {
+        throw new Error('Node address not available from KRNL node configuration.');
+      }
+
       const nonce = await getContractNonce(embeddedWallet);
-      const transactionIntent = createTransactionIntent(embeddedWallet, scenarioType, nonce);
+      const transactionIntent = createTransactionIntent(embeddedWallet, scenarioType, nonce, nodeConfig.workflow.node_address);
       const signature = await signTransactionIntent(transactionIntent);
 
       const selectedScenario = selectScenarioTemplate(scenarioType);

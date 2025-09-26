@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Play, Coins } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface WorkflowExecutionProps {
   isAuthorized: boolean;
@@ -27,6 +28,7 @@ interface WorkflowExecutionProps {
   onUsdcAmountChange: (value: string) => void;
   onActiveScenarioChange: (scenario: 'A' | 'B' | null) => void;
   validateInputs: (scenarioType?: 'A' | 'B') => boolean;
+  balance: string;
 }
 
 export const WorkflowExecution = ({
@@ -47,8 +49,31 @@ export const WorkflowExecution = ({
   onCityStateZipChange,
   onUsdcAmountChange,
   onActiveScenarioChange,
-  validateInputs
+  validateInputs,
+  balance
 }: WorkflowExecutionProps) => {
+  const validateRequirements = (scenarioType: 'A' | 'B'): boolean => {
+    // Check smart account authorization
+    if (!isAuthorized) {
+      toast.error('Smart account must be authorized first');
+      return false;
+    }
+
+    // Check embedded wallet balance > 0
+    if (parseFloat(balance) <= 0) {
+      toast.error('Embedded wallet balance must be greater than 0');
+      return false;
+    }
+
+    // For scenario B, check USDC balance > 1000
+    if (scenarioType === 'B' && parseFloat(usdcBalance) <= 1000) {
+      toast.error('USDC balance must be greater than 1000 for property purchase');
+      return false;
+    }
+
+    return true;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -91,12 +116,12 @@ export const WorkflowExecution = ({
               </div>
               <Button
                 onClick={async () => {
-                  if (validateInputs('A')) {
+                  if (validateRequirements('A') && validateInputs('A')) {
                     onActiveScenarioChange('A');
                     await executeWorkflow('A', propertyAddress, cityStateZip);
                   }
                 }}
-                disabled={!isAuthorized || currentStep > 0}
+                disabled={currentStep > 0}
                 className="w-full"
               >
                 {currentStep > 0 && activeScenario === 'A' ? (
@@ -181,16 +206,12 @@ export const WorkflowExecution = ({
               </div>
               <Button
                 onClick={async () => {
-                  if (parseFloat(usdcBalance) <= 0) {
-                    alert('Error: You need USDC balance to purchase property. Please mint some USDC first.');
-                    return;
-                  }
-                  if (validateInputs('B')) {
+                  if (validateRequirements('B') && validateInputs('B')) {
                     onActiveScenarioChange('B');
                     await executeWorkflow('B', propertyAddress, cityStateZip, usdcAmount);
                   }
                 }}
-                disabled={!isAuthorized || currentStep > 0}
+                disabled={currentStep > 0}
                 variant="outline"
                 className="w-full"
               >
