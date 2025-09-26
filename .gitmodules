@@ -4,6 +4,8 @@
 [submodule "contracts/lib/openzeppelin-contracts"]
 	path = contracts/lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+	commit = c64a1edb67b6e3f4a15cca8909c9482ad33a02b0
 [submodule "contracts/lib/account-abstraction"]
 	path = contracts/lib/account-abstraction
 	url = https://github.com/eth-infinitism/account-abstraction
+	commit = 7af70c8993a6f42973f520ae0752386a5032abe7
