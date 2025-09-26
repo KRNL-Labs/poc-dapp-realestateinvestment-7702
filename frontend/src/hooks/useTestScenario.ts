@@ -16,7 +16,7 @@ import testScenarioData from '../test-scenario.json';
 import testScenarioBData from '../test-scenario-b.json';
 import RealEstateInvestmentABI from '../contracts/RealEstateInvestment.abi.json';
 import ERC20ABI from '../contracts/ERC20.abi.json';
-import { RPC_URL, DELEGATE_OWNER, REAL_ESTATE_INVESTMENT_ADDRESS, MOCK_USDC_ADDRESS } from '../const';
+import { RPC_URL, DELEGATE_OWNER, REAL_ESTATE_INVESTMENT_ADDRESS, MOCK_USDC_ADDRESS, ATTESTOR_IMAGE } from '../const';
 import type { ABIInput, ABIFunction } from '../types';
 
 
@@ -161,6 +161,7 @@ export const useTestScenario = () => {
     return {
       '{{ENV.SENDER_ADDRESS}}': embeddedWallet.address,
       '{{ENV.TARGET_CONTRACT}}': REAL_ESTATE_INVESTMENT_ADDRESS,
+      '{{ENV.ATTESTOR_IMAGE}}': ATTESTOR_IMAGE || '',
       '{{USER_SIGNATURE}}': signature,
       '{{TRANSACTION_INTENT_VALUE}}': transactionIntent.value.toString(),
       '{{TRANSACTION_INTENT_ID}}': transactionIntent.id,

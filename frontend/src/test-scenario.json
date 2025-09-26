@@ -2,7 +2,7 @@
   "chain_id": 11155111,
   "sender": "{{ENV.SENDER_ADDRESS}}",
   "delegate": "{{TRANSACTION_INTENT_DELEGATE}}",
-  "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
+  "attestor": "{{ENV.ATTESTOR_IMAGE}}",
   "target": {
     "contract": "{{ENV.TARGET_CONTRACT}}",
     "function": "submitPropertyAnalysis((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes))",
@@ -30,7 +30,7 @@
       {
         "name": "property-data-fetcher",
         "image": "ghcr.io/krnl-labs/executor-http@sha256:07ef35b261014304a0163502a7f1dec5395c5cac1fc381dc1f79b052389ab0d5",
-        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
+        "attestor": "{{ENV.ATTESTOR_IMAGE}}",
         "next": "market-data-fetcher",
         "inputs": {
           "url": "https://poc.platform.lat/zillow/webservice/GetSearchResults.htm?zws-id=demo-api-key&address=1234-Maple-Street&citystatezip=Austin,TX",
@@ -72,7 +72,7 @@
       {
         "name": "market-data-fetcher",
         "image": "ghcr.io/krnl-labs/executor-http@sha256:07ef35b261014304a0163502a7f1dec5395c5cac1fc381dc1f79b052389ab0d5",
-        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
+        "attestor": "{{ENV.ATTESTOR_IMAGE}}",
         "next": "ai-property-analysis",
         "inputs": {
           "url": "https://poc.platform.lat/zillow/webservice/GetZestimate.htm?zws-id=demo-api-key&zpid=${property-data-fetcher.zpid}",
@@ -138,7 +138,7 @@
       {
         "name": "ai-property-analysis",
         "image": "ghcr.io/krnl-labs/executor-http@sha256:07ef35b261014304a0163502a7f1dec5395c5cac1fc381dc1f79b052389ab0d5",
-        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
+        "attestor": "{{ENV.ATTESTOR_IMAGE}}",
         "next": "construct-property-analysis-evm",
         "inputs": {
           "url": "https://poc.platform.lat/openai/openai-api?poc=property-analysis",
@@ -180,7 +180,7 @@
       {
         "name": "construct-property-analysis-evm",
         "image": "ghcr.io/krnl-labs/executor-encoder-evm@sha256:b28823d12eb1b16cbcc34c751302cd2dbe7e35480a5bc20e4e7ad50a059b6611",
-        "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
+        "attestor": "{{ENV.ATTESTOR_IMAGE}}",
         "next": "prepare-authdata",
         "config": {
           "parameters": [

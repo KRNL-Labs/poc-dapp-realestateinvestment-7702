@@ -2,7 +2,7 @@
   "chain_id": 11155111,
   "sender": "{{ENV.SENDER_ADDRESS}}",
   "delegate": "{{TRANSACTION_INTENT_DELEGATE}}",
-  "attestor": "image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:5ab93c9c06d64333ecd19a47bafc3348bb14e2b2ffd2972ab93044509fab1857",
+  "attestor": "{{ENV.ATTESTOR_IMAGE}}",
   "target": {
     "contract": "{{ENV.TARGET_CONTRACT}}",
     "function": "purchaseTokens((uint256,uint256,bytes32,(bytes32,bytes,bytes)[],bytes,bool,bytes),uint256)",

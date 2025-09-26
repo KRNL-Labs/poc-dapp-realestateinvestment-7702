@@ -38,17 +38,59 @@ const config = createConfig({
 });
 ```
 
-## Development
+## Setup Instructions
+
+### 1. Clone Repository
+```bash
+git clone <repo-url>
+cd poc-dapp-realestateinvestment
+```
+
+### 2. Deploy Target Contract (Optional)
+```bash
+cd contracts
+forge script script/Deploy.s.sol --rpc-url sepolia --broadcast
+```
+
+### 3. Environment Configuration
+```bash
+cd frontend
+cp .env.example .env
+```
+
+### 4. Update Contract Addresses (Optional)
+Edit `.env` file with your contract addresses:
+```env
+VITE_REAL_ESTATE_INVESTMENT_ADDRESS=0x038b5f24FF651d174411F15f8cc64C4156A9a6D0
+VITE_DELEGATED_ACCOUNT_ADDRESS=0xFFB5C2684532D8B24313Fc084d65DDaa0B946040
+VITE_DELEGATE_OWNER=0x3dB2eac708DCd7833dDc87d2f3A25eEde0621a55
+VITE_ATTESTOR_IMAGE=image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:...
+```
+
+### 5. Update Privy Environment Variables
+Configure Privy authentication:
+```env
+VITE_PRIVY_APP_ID=your_privy_app_id
+VITE_PRIVY_APP_SECRET=your_privy_app_secret
+```
+
+### 6. Start Development Server
+```bash
+npm install
+npm run dev
+```
+
+## Development Commands
 
 ```bash
-# Install dependencies
-npm install
-
-# Development server
-npm run dev
-
 # Type checking
 npm run type-check
+
+# Build for production
+npm run build
+
+# Linting
+npm run lint
 ```
 
 ## Flow Overview

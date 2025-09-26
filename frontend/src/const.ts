@@ -60,6 +60,8 @@ export const CONTRACT_ADDRESSES = {
   REAL_ESTATE_INVESTMENT: import.meta.env.VITE_REAL_ESTATE_INVESTMENT_ADDRESS,
 } as const;
 
+export const ATTESTOR_IMAGE = import.meta.env.VITE_ATTESTOR_IMAGE;
+
 export const FEE_CONFIG = {
   MIN_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MIN_EXCHANGE_RATE || '3000000000'),
   MAX_EXCHANGE_RATE: BigInt(import.meta.env.VITE_MAX_EXCHANGE_RATE || '4000000000'),
@@ -68,7 +70,6 @@ export const FEE_CONFIG = {
 } as const;
 
 export const DELEGATE_OWNER = import.meta.env.VITE_DELEGATE_OWNER;
-export const NODE_ADDRESS = import.meta.env.VITE_NODE_ADDRESS || '0x0000000000000000000000000000000000000000';
 
 // Contract addresses used in workflows
 export const REAL_ESTATE_INVESTMENT_ADDRESS = CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT;
