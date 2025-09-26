@@ -48,6 +48,7 @@ cd poc-dapp-realestateinvestment
 
 ### 2. Deploy Target Contract (Optional)
 ```bash
+git submodule update --init --recursive
 cd contracts
 forge script script/Deploy.s.sol --rpc-url sepolia --broadcast
 ```
