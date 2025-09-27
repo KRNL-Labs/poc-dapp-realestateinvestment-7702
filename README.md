@@ -6,7 +6,7 @@ A proof-of-concept decentralized application for tokenized real estate investmen
 
 ### SDK Integration
 - **@krnl-dev/sdk-react-7702**: EIP-7702 account abstraction with Privy wallet integration
-- **Privy**: Embedded wallet provider with EIP-7702 support for delegated accounts
+- **Privy** (required): Embedded wallet provider with EIP-7702 support for delegated accounts
 - **Smart Contract**: `RealEstateInvestment.sol` with signature-based authorization
 
 ### KRNL Node Interaction
@@ -16,11 +16,6 @@ A proof-of-concept decentralized application for tokenized real estate investmen
 4. **Progress Tracking**: Real-time workflow status monitoring
 
 ## Key Components
-
-### Hooks
-- `useTestScenario`: Orchestrates workflow execution with dynamic node config
-- `useKrnlConfig`: Lazy-loads KRNL node configuration on demand
-- `useSmartAccountAuth`: Handles EIP-7702 authorization and delegation
 
 ### Workflow Types
 - **Scenario A**: Property analysis submission with oracle validation
@@ -46,10 +41,11 @@ git clone <repo-url>
 cd poc-dapp-realestateinvestment
 ```
 
-### 2. Deploy Target Contract (Optional)
+### 2. Deploy Real Estate Investment Contract (Optional, you can use sample contracts in .env.example)
 ```bash
 git submodule update --init --recursive
 cd contracts
+cp .env.example .env
 forge script script/Deploy.s.sol --rpc-url sepolia --broadcast
 ```
 
@@ -59,7 +55,7 @@ cd frontend
 cp .env.example .env
 ```
 
-### 4. Update Contract Addresses (Optional)
+### 4. Update Contract Addresses (Optional, you can use sample contracts in .env.example)
 Edit `.env` file with your contract addresses:
 ```env
 VITE_REAL_ESTATE_INVESTMENT_ADDRESS=0x038b5f24FF651d174411F15f8cc64C4156A9a6D0
@@ -69,7 +65,7 @@ VITE_ATTESTOR_IMAGE=image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-
 ```
 
 ### 5. Update Privy Environment Variables
-Configure Privy authentication:
+Configure Privy authentication (get your credentials from https://dashboard.privy.io/):
 ```env
 VITE_PRIVY_APP_ID=your_privy_app_id
 VITE_PRIVY_APP_SECRET=your_privy_app_secret
