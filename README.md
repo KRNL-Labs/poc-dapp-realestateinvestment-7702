@@ -62,9 +62,9 @@ cp .env.example .env
 You can use sample contracts in .env.example
 Edit `.env` file with your contract addresses:
 ```env
-VITE_REAL_ESTATE_INVESTMENT_ADDRESS=0x038b5f24FF651d174411F15f8cc64C4156A9a6D0
-VITE_DELEGATED_ACCOUNT_ADDRESS=0xFFB5C2684532D8B24313Fc084d65DDaa0B946040
-VITE_DELEGATE_OWNER=0x3dB2eac708DCd7833dDc87d2f3A25eEde0621a55
+VITE_REAL_ESTATE_INVESTMENT_ADDRESS=
+VITE_DELEGATED_ACCOUNT_ADDRESS=
+VITE_DELEGATE_OWNER=
 VITE_ATTESTOR_IMAGE=image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:...
 ```
 
