@@ -41,7 +41,9 @@ git clone <repo-url>
 cd poc-dapp-realestateinvestment
 ```
 
-### 2. Deploy Real Estate Investment Contract (Optional, you can use sample contracts in .env.example)
+### 2. Deploy Real Estate Investment Contract (Optional)
+
+You can use sample contracts in .env.example
 ```bash
 git submodule update --init --recursive
 cd contracts
@@ -55,7 +57,9 @@ cd frontend
 cp .env.example .env
 ```
 
-### 4. Update Contract Addresses (Optional, you can use sample contracts in .env.example)
+### 4. Update Contract Addresses (Optional)
+
+You can use sample contracts in .env.example
 Edit `.env` file with your contract addresses:
 ```env
 VITE_REAL_ESTATE_INVESTMENT_ADDRESS=0x038b5f24FF651d174411F15f8cc64C4156A9a6D0
