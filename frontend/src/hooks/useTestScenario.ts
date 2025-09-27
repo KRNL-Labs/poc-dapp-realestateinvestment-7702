@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useWallets } from '@privy-io/react-auth';
+import toast from 'react-hot-toast';
 import {
   encodePacked,
   keccak256,
@@ -219,6 +220,7 @@ export const useTestScenario = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Workflow execution failed';
       setError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

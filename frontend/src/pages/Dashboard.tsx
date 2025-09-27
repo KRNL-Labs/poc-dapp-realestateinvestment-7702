@@ -12,6 +12,7 @@ import { WorkflowExecution } from '@/components/WorkflowExecution';
 import { WorkflowTrackingModal } from '@/components/WorkflowTrackingModal';
 import { formatAddress, getChainName, switchNetwork } from '@/utils';
 import { validateInputs, type ValidationErrors } from '@/utils/validation';
+import toast from 'react-hot-toast';
 
 const Dashboard = () => {
   const { logout } = usePrivy();
@@ -69,6 +70,22 @@ const Dashboard = () => {
       setIsSwitchingToSepolia(false);
     }
   }, [embeddedWallet, isSwitchingToSepolia]);
+
+  const handleEnableSmartAccount = useCallback(async () => {
+    // Check if balance is sufficient (> 0 ETH)
+    const currentBalance = parseFloat(balance);
+    if (currentBalance <= 0) {
+      toast.error('Insufficient balance. You need some ETH to authorize the smart account.');
+      return false;
+    }
+
+    try {
+      return await enableSmartAccount();
+    } catch (error) {
+      console.error('Failed to enable smart account:', error);
+      return false;
+    }
+  }, [balance, enableSmartAccount]);
 
   const handleModalClose = (open: boolean) => {
     setIsTrackingModalOpen(open);
@@ -172,7 +189,7 @@ const Dashboard = () => {
           smartAccountEnabled={smartAccountEnabled}
           authLoading={authLoading}
           authError={authError}
-          enableSmartAccount={enableSmartAccount}
+          enableSmartAccount={handleEnableSmartAccount}
           refreshStatus={refreshStatus}
           isAuthenticated={isAuthenticated}
           isReady={isReady}

@@ -59,9 +59,9 @@ export const WorkflowExecution = ({
       return false;
     }
 
-    // Check embedded wallet balance > 0
-    if (parseFloat(balance) <= 0) {
-      toast.error('Embedded wallet balance must be greater than 0');
+    // Check embedded wallet balance > 0.03 ETH
+    if (parseFloat(balance) <= 0.03) {
+      toast.error('Insufficient balance. You need more than 0.03 ETH to execute workflows.');
       return false;
     }
 
