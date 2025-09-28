@@ -69,7 +69,7 @@ export const FEE_CONFIG = {
   MAX_FEE: BigInt(import.meta.env.VITE_MAX_FEE || '5000000'),
 } as const;
 
-export const DELEGATE_OWNER = import.meta.env.VITE_DELEGATE_OWNER;
+export const TARGET_CONTRACT_OWNER = import.meta.env.VITE_TARGET_CONTRACT_OWNER;
 
 // Contract addresses used in workflows
 export const REAL_ESTATE_INVESTMENT_ADDRESS = CONTRACT_ADDRESSES.REAL_ESTATE_INVESTMENT;

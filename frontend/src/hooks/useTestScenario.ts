@@ -17,7 +17,7 @@ import testScenarioData from '../test-scenario.json';
 import testScenarioBData from '../test-scenario-b.json';
 import RealEstateInvestmentABI from '../contracts/RealEstateInvestment.abi.json';
 import ERC20ABI from '../contracts/ERC20.abi.json';
-import { RPC_URL, DELEGATE_OWNER, REAL_ESTATE_INVESTMENT_ADDRESS, MOCK_USDC_ADDRESS, ATTESTOR_IMAGE } from '../const';
+import { RPC_URL, TARGET_CONTRACT_OWNER, REAL_ESTATE_INVESTMENT_ADDRESS, MOCK_USDC_ADDRESS, ATTESTOR_IMAGE, DEFAULT_CHAIN_ID } from '../const';
 import type { ABIInput, ABIFunction } from '../types';
 
 
@@ -144,7 +144,7 @@ export const useTestScenario = () => {
       value: BigInt(0),
       id: intentId,
       nodeAddress: nodeAddress as `0x${string}`,
-      delegate: DELEGATE_OWNER as `0x${string}`,
+      delegate: TARGET_CONTRACT_OWNER as `0x${string}`,
       targetFunction: functionSelector as `0x${string}`,
       nonce,
       deadline: BigInt(deadline)

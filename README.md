@@ -64,7 +64,7 @@ Edit `.env` file with your contract addresses:
 ```env
 VITE_REAL_ESTATE_INVESTMENT_ADDRESS=
 VITE_DELEGATED_ACCOUNT_ADDRESS=
-VITE_DELEGATE_OWNER=
+VITE_TARGET_CONTRACT_OWNER=
 VITE_ATTESTOR_IMAGE=image://ghcr.io/krnl-labs/attestor-poc-realestateinvestment-dapp:latest@sha256:...
 ```
 
